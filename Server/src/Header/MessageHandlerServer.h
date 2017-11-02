@@ -30,7 +30,9 @@ private:
 	char* handleDel();
 	bool checkSendPartsLength (string * messageSplitted);
 	bool doesFileExist (string filepath);
+	bool createFileAtPath(string path, string name, string message);
 	int countFilesInDirectory (string directorypath);
+	
 };
 
 #endif /* MESSAGEHANDLERSERVER_H_ */

@@ -15,15 +15,14 @@ bool MessageHandlerServer::getResult() {
 }
 
 // checks if a file exists in a specific path
-bool doesFileExist (string filepath) {
+bool MessageHandlerServer::doesFileExist (string filepath) {
 	ifstream checkFile (filepath);
 	return checkFile.good();
 }
 
-// counts *.txt files in a directory with the nameconvention of 1.txt, 2.txt, 3.txt
-int countFilesInDirectory (string directorypath) {
+// count *.txt files in a directory with the nameconvention of 1.txt, 2.txt, 3.txt
+int MessageHandlerServer::countFilesInDirectory (string directorypath) {
 	int counter = 1;
-	string directorypath (directorypath);
 	string filepath = directorypath + to_string(counter) + ".txt";
 	
 	while(doesFileExist(filepath.c_str())) {
@@ -33,6 +32,20 @@ int countFilesInDirectory (string directorypath) {
 		
 	}
 	return counter-1;
+}
+
+// creates a new file at the passed path and insert message
+bool MessageHandlerServer::createFileAtPath(string path, string name, string message) {
+	string fullPath = path + name;
+	ofstream newFile (fullPath.c_str());
+	
+	if(newFile.is_open()){
+		newFile << message;
+		newFile.close();
+		messageResult = true;
+		return true;
+	}
+	return false;
 }
 
 // checks every part of the whole message, returns true if every test has passed.
@@ -85,24 +98,25 @@ char* MessageHandlerServer::handleSend(string messageWhole) {
 	}
 	
 	const string sender = messageSplitted[0]; // if message has passed validation, sender will always be at index 0
-	int counter = 1;
 	string path = path+sender+"/";
-	string createDirectoryCommand = "mkdir -p "+path;
-	system(createDirectoryCommand.c_str());
 	
-	while(counter != 5){
-		
-		string filePath (path + to_string(counter) + ".txt");
-		ofstream myfile (filePath.c_str());
-		counter++;
-			myfile << "This is a line.\n";
-			myfile << "This is another line.\n";
-			myfile.close();
+	// check if there are no files yet at the path, if there are 0, create path
+	int fileNumber;
+	if( (fileNumber = countFilesInDirectory(path) ) == 0) {
+		string createDirectoryCommand = "mkdir -p "+path;
+		system(createDirectoryCommand.c_str());
 	}
+	fileNumber += 1;
+	string fileName = to_string(fileNumber) + ".txt";
 	
-	
-	strcpy(buffer, "OK\n");
-	return buffer;
+	// save the email at specified path
+	if(createFileAtPath(path, fileName, messageWhole)){
+		strcpy(buffer, "OK\n");
+		return buffer;
+	}else{
+		strcpy(buffer, "ERR\n");
+		return buffer;
+	}
 }
 
 // sends the received message the right way according to the command that has been sent with it
