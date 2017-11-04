@@ -49,50 +49,96 @@ void streamSocketServer::bindSocketToPort () {
     }
 }
 
+// shamelessly copied from "Beej's Guide to network programming"
+int streamSocketServer::sendall (int sockfd, char* buffer, int length) {
+	int total = 0;        // how many bytes we’ve sent
+	int bytesleft = length; // how many we have left to send
+	int n;
+	
+	while(total < length) {
+		n = send(sockfd, buffer+total, bytesleft, 0);
+		if (n == -1) { break; }
+		total += n;
+		bytesleft -= n;
+	}
+	return total; // return -1 on failure, 0 on success
+}
+
+// make sure to receive everything sent, returns the total number of received bytes
+int streamSocketServer::recvall (int sockfd, char* buffer) {
+	int total = 0; // how many bytes we've received in total
+	int bytesReceived = 0; // how many bytes we've received per call
+	string temp; // to save messages received and copy it to buffer at the end of the recv loop
+	
+	if( (bytesReceived = recv(sockfd, buffer, MAXDATASIZE-1, 0) ) == 0) {
+		return bytesReceived;
+	}
+	temp = string(buffer);
+	total =+ bytesReceived;
+	
+	sleep(1); // make sure the client has enough time to send all his data
+	
+	while( !(bytesReceived <= 0) ) {
+		bytesReceived = 0;
+		bytesReceived = recv(sockfd, buffer, MAXDATASIZE, MSG_DONTWAIT); // this time do not wait for send call from client
+		
+		
+		if( !(bytesReceived < 0) ){
+			total =+ bytesReceived;
+			temp.append(buffer);
+		}
+	}
+	strcpy(buffer, temp.c_str()); // get the whole message into buffer
+	return total;
+}
+
 // to handle all incoming messages from client
 void streamSocketServer::handleRecv (char * buffer) {
-	
-	MessageHandlerServer messageHandler = MessageHandlerServer(buffer, path);
-	memset(buffer, 0, strlen(buffer));
-	buffer = messageHandler.HandleMessage();
-	
 	string message(buffer);
+	
+	// make a copy of buffer to pass on to messagehandler as we do not want to
+	// fiddle with original buffer
+	char* buffercopy = new char [message.size() + 1];
+	copy(message.begin(), message.end(), buffercopy);
+	buffercopy[message.size()] = '\0';
+	
 	string command = message.substr(0, message.find("\n"));
 	//delete command line, don't need it anymore
 	message.erase(0, message.find("\n") + 1);
 	
+	MessageHandlerServer messageHandler = MessageHandlerServer(buffercopy, path);
+	memset(buffer, 0, strlen(buffer));
+	buffer = messageHandler.HandleMessage();
+	
+	cout << "deleting buffercopy for the greater good" << endl;
+	delete[] buffercopy; // free buffercopy, dont need it anymore
+	
 	if(strcmp(command.c_str(),"SEND") == 0){
 		if(messageHandler.getResult()){
-			send(clientfd, buffer, 3, 0);
+			sendall(clientfd, buffer, 3);
 		}else{
-			send(clientfd, buffer, 4, 0);
+			sendall(clientfd, buffer, 4);
 		}
 		
 	}else if(strcmp(command.c_str(),"LIST") == 0){
-		cout << "got into LIST if" << endl;
-		//strcat(buffer, " command received");
-		cout << "LIST Bytes sent: " << send(clientfd, buffer, sizeof buffer, 0) << endl;;
+
 		
 	}else if(strcmp(command.c_str(),"READ") == 0){
-		cout << "got into READ if" << endl;
-		//strcat(buffer, " command reveiced.");
-		send(clientfd, buffer, sizeof buffer, 0);
+
 		
 	}else if(strcmp(command.c_str(),"DEL") == 0){
-		cout << "got into DEL if" << endl;
-		//strcat(buffer, " command received.");
-		send(clientfd, buffer, strlen(buffer), 0);
+
 		
 	}else if(strcmp(command.c_str(),"QUIT") == 0){
 		exit(1);
 		
 	}else{
-		cout << "got into ELSE if n e w" << endl;
-		strcpy(buffer, "Send me a real command, dude.");
-		cout << "dunno it fam (buffer size: " << strlen(buffer) << "), bytes send: " << send(clientfd, buffer, strlen(buffer), 0) << endl;
+		strcpy(buffer, "Send me a real command, dude. (STREAMSOCKET)");
+		cout << "dunno it fam (buffer size: " << strlen(buffer) << "), bytes send: " << sendall(clientfd, buffer, strlen(buffer)) << endl;
 	}
 	memset(buffer, 0, strlen(buffer));
 	cout << "cycled through all ifs in handleRecv()" << endl;
+	
 }
 
 //start the recv/send loop
@@ -102,12 +148,12 @@ void streamSocketServer::initCommunicationWithClient () {
 	
 	//send welcome message and list of available commands
 	strcpy(buffer, "Welcome to my server!\nSEND, LISŢ, READ, DEL, QUIT\nEnter command: ");
-	send(clientfd, buffer, strlen(buffer), 0);
+	sendall(clientfd, buffer, strlen(buffer));
 	memset(buffer, 0, sizeof buffer);
 	
 	while(1) {
 		cout << "Listening ..." << endl;
-		if( (bytesInBuffer = recv (clientfd, buffer, MAXDATASIZE - 1, 0)) > 0 ) {
+		if( (bytesInBuffer = recvall (clientfd, buffer)) > 0 ) {
 			buffer[bytesInBuffer] = '\0';
 			
 			handleRecv(buffer);

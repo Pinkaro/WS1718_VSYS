@@ -10,15 +10,15 @@ void checkGivenArguments (int argCounter, char *argValues[]) {
 
 	string path(argValues[1]);
 	//to check if path is absolute and goes into /home/, and end with /
-	if(!regex_match(path, regex("(/home)(/[^/ ]*)?/{1}"))) {
-		perror("invalid path, has to start with \"/home/\" and end with \"/\"\nExpected: <file> <path> <port>");
+	if(!regex_match(path, regex("(/home)/([^,:])*/"))) {
+		perror("invalid path, has to start with \"/home/\" and end with \"/\"\nExpected: <path> <port>");
 		exit(1);
 	}
 
 	int port = atoi(argValues[2]);
 	//to check if port number is within reasonable scope
 	if(port <= 1023 || port > 65535) {
-		perror("port is out of range (must be greater than 1023 and lesser than 65535)\nExpected: <file> <path> <port>");
+		perror("port is out of range (must be greater than 1023 and lesser than 65535)\nExpected: <path> <port>");
 		exit(1);
 	}
 }

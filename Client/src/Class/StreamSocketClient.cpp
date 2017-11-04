@@ -25,6 +25,49 @@ streamSocketClient::~streamSocketClient() {
 	
 }
 
+// shamelessly copied from "Beej's Guide to network programming"
+int streamSocketClient::sendall (int sockfd, char* buffer, int length) {
+	int total = 0;        // how many bytes we’ve sent
+	int bytesleft = length; // how many we have left to send
+	int n;
+	
+	while(total < length) {
+		n = send(sockfd, buffer+total, bytesleft, 0);
+		if (n == -1) { break; }
+		total += n;
+		bytesleft -= n;
+	}
+	return total; // return -1 on failure, 0 on success
+}
+
+// make sure to receive everything sent, returns the total number of received bytes
+int streamSocketClient::recvall (int sockfd, char* buffer) {
+	int total = 0; // how many bytes we've received in total
+	int bytesReceived = 0; // how many bytes we've received per call
+	string temp; // to save messages received and copy it to buffer at the end of the recv loop
+	
+	if( (bytesReceived = recv(sockfd, buffer, MAXDATASIZE-1, 0) ) == 0) {
+		return bytesReceived;
+	}
+	temp = string(buffer);
+	total =+ bytesReceived;
+	
+	sleep(1); // make sure the server has enough time to send all his data
+	
+	while( !(bytesReceived <= 0) ) {
+		bytesReceived = 0;
+		bytesReceived = recv(sockfd, buffer, MAXDATASIZE, MSG_DONTWAIT); // this time do not wait for send call from server
+		
+		
+		if( !(bytesReceived < 0) ){
+			total =+ bytesReceived;
+			temp.append(buffer);
+		}
+	}
+	strcpy(buffer, temp.c_str()); // get the whole message into buffer
+	return total;
+}
+
 int streamSocketClient::handleSend(char * buffer) {
 	string sender;
 	string recipient;
@@ -33,20 +76,23 @@ int streamSocketClient::handleSend(char * buffer) {
 	string messageWhole(buffer);
 	
 	cout << "\nSender: ";
-	cin >> sender;
+	getline(cin, sender);
 	sender.append("\n");
+	messageWhole.append(sender);
 	
-	cout << "\nRecipient: ";
-	cin >> recipient;
+	cout << "Recipient: ";
+	getline(cin, recipient);
 	recipient.append("\n");
+	messageWhole.append(recipient);
 	
-	cout << "\nTopic: ";
-	cin >> topic;
+	cout << "Topic: ";
+	getline(cin, topic);
 	topic.append("\n");
+	messageWhole.append(topic);
 	
-	cout << "\nMessage:\n";
+	cout << "Message:\n";
 	while(messagePart != ".\n"){
-		cin >> messagePart;
+		getline(cin, messagePart);
 		messagePart.append("\n");
 		messageWhole.append(messagePart);
 	}
@@ -55,7 +101,8 @@ int streamSocketClient::handleSend(char * buffer) {
 	memset(buffer, 0, strlen(buffer));
 	strcpy(buffer, messageWhole.c_str());
 	
-	return send(sockfd, buffer, strlen(buffer),0);
+	string buffer_str (buffer);
+	return sendall(sockfd, buffer, buffer_str.size());
 }
 
 void streamSocketClient::handleRecv(char * buffer) {
@@ -93,7 +140,7 @@ void streamSocketClient::startConnection() {
 	char buffer[MAXDATASIZE];
 	while (1) {
 		cout << "Listening..." << endl;
-		if( (bytesInBuffer = recv(sockfd, buffer, MAXDATASIZE-1, 0)) > 0) {
+		if( (bytesInBuffer = recvall(sockfd, buffer)) > 0) {
 			buffer[bytesInBuffer]='\0';
 			handleRecv(buffer);
 		}

@@ -39,6 +39,8 @@ private:
 	void initCommunicationWithClient ();
 	bool handleSend(string message);
 	bool checkSendPartsLength(string * messageSplitted);
+	int sendall (int sockfd, char* buffer, int length);
+	int recvall (int sockfd, char* buffer); 
 };
 
 #endif /* STREAMSOCKETSERVER_H_ */

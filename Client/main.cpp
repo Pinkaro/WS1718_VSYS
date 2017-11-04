@@ -12,7 +12,7 @@ void checkGivenArguments (int argCounter, char *argValues[]) {
 	//to check if input was in fact an ip address
 	if(!regex_match(path, regex("(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])")))
 	{
-		perror("invalid path, has to start with \"/home/\"\nExpected: <file> <ip-address> <port>");
+		perror("invalid path, has to start with \"/home/\"\nExpected: <ip-address> <port>");
 		exit(1);
 	}
 
@@ -20,7 +20,7 @@ void checkGivenArguments (int argCounter, char *argValues[]) {
 	//to check if port number is within reasonable scope
 	if(port <= 1023 || port > 65535)
 	{
-		perror("port is out of range (must be greater than 1023 and lesser than 65535)\nExpected: <file> <ip-address> <port>");
+		perror("port is out of range (must be greater than 1023 and lesser than 65535)\nExpected: <ip-address> <port>");
 		exit(1);
 	}
 }

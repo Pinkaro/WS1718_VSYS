@@ -79,23 +79,35 @@ bool MessageHandlerServer::checkSendPartsLength (string * messageSplitted) {
 // first splits the message into an array in 5 parts then lets checkSendPartsLength() check the validity of
 // the message, if everything goes fine it saves it in a file on the server
 char* MessageHandlerServer::handleSend(string messageWhole) {
-	string messageSplitted [5];
-	int counter = 0;
-	regex seperator("(\n\n|\n)");
-	std::regex_token_iterator<string::iterator> tokens(messageWhole.begin(), messageWhole.end(), seperator, -1);
-	std::regex_token_iterator<string::iterator> rend;
 	
-	while(tokens != rend) {
-		messageSplitted[counter] = *tokens++;
+	char seperator = '\n';
+	int counter = 0;
+	int currentPos = 0;
+	string messageSplitted [5];
+	int temp = 0;
+	cout << messageWhole << "\n" << endl;
+	cout << "String size: " << messageWhole.size() << "\nSplit up to:" <<endl;
+	
+	while( counter != 3 ) {
+		messageSplitted[counter] = messageWhole.substr(0, messageWhole.find(seperator));
 		counter++;
+		temp = currentPos;
+		currentPos = messageWhole.find(seperator, temp) + 1;
+		messageWhole.erase(0, messageWhole.find(seperator) + 1);
 	}
 	
+	messageSplitted[3] = messageWhole.substr(0, messageWhole.find(".\n"));
+	messageWhole.erase(0, messageWhole.find(".\n"));
+	messageSplitted[4] = messageWhole;
+	
+	cout << "I split the message up and initiating control of parts!" << endl;
 	// validate for correct input
 	if(!checkSendPartsLength(messageSplitted)) {
 		messageResult = false;
-		strcpy(buffer, "ERR\n");
+		strcpy(buffer, "SEND: PARTS-ERR\n");
 		return buffer;
 	}
+	cout << "Parts passed validation, preparing to count files" << endl;
 	
 	const string sender = messageSplitted[0]; // if message has passed validation, sender will always be at index 0
 	string path = path+sender+"/";
@@ -146,4 +158,6 @@ char* MessageHandlerServer::HandleMessage() {
 		
 	}
 	memset(buffer, 0, strlen(buffer));
+	strcpy(buffer, "ERR\n");
+	return buffer;
 }

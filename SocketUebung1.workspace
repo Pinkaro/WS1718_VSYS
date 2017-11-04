@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Workspace Name="SocketUebung1" Database="">
-  <Project Name="Client" Path="Client/Client.project" Active="Yes"/>
+  <Project Name="Client" Path="Client/Client.project" Active="No"/>
   <Project Name="Server" Path="Server/Server.project"/>
+  <Project Name="playground" Path="playground/playground.project" Active="Yes"/>
   <BuildMatrix>
     <WorkspaceConfiguration Name="Debug" Selected="yes">
       <Environment/>
       <Project Name="Client" ConfigName="Debug"/>
       <Project Name="Server" ConfigName="Debug"/>
+      <Project Name="playground" ConfigName="Debug"/>
     </WorkspaceConfiguration>
     <WorkspaceConfiguration Name="Release" Selected="yes">
       <Environment/>
       <Project Name="Client" ConfigName="Release"/>
       <Project Name="Server" ConfigName="Release"/>
+      <Project Name="playground" ConfigName="Release"/>
     </WorkspaceConfiguration>
   </BuildMatrix>
 </CodeLite_Workspace>
