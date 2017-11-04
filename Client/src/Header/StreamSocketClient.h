@@ -33,11 +33,13 @@ private:
 	char * ip;
 	int port;
 	
-	void handleRecv(char * buffer);
-	int handleSend(char * buffer);
+	void handleRecv(char* buffer);
+	int handleSend(char* buffer);
+	int handleRead(char* buffer);
+	int handleDel(char* buffer);
+	int handleList(char* buffer);
 	int sendall(int sockfd, char* buffer, int length);
 	int recvall(int sockfd, char* buffer);
-	int handleList(char * buffer);
 };
 
 #endif /* STREAMSOCKETCLIENT_H_ */

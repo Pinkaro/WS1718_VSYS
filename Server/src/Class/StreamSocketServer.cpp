@@ -98,8 +98,8 @@ void streamSocketServer::handleRecv (char * buffer) {
 	
 	// make a copy of buffer to pass on to messagehandler as we do not want to
 	// fiddle with original buffer
-	char* buffercopy = new char [message.size() + 1];
-	copy(message.begin(), message.end(), buffercopy);
+	char* buffercopy = new char[message.size() + 1];
+	strcpy(buffercopy, message.c_str());
 	buffercopy[message.size()] = '\0';
 	
 	string command = message.substr(0, message.find("\n"));
@@ -110,6 +110,8 @@ void streamSocketServer::handleRecv (char * buffer) {
 	memset(buffer, 0, strlen(buffer));
 	buffer = messageHandler.HandleMessage();
 	
+	delete[] buffercopy;
+	
 	if(strcmp(command.c_str(),"SEND") == 0){
 		if(messageHandler.getResult()){
 			sendall(clientfd, buffer, 3);
@@ -118,19 +120,25 @@ void streamSocketServer::handleRecv (char * buffer) {
 		}
 		
 	}else if(strcmp(command.c_str(),"LIST") == 0){
-		cout << "Sending LIST result... " << endl;
-		cout << buffer << endl;
 		if(messageHandler.getResult()){
 			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}else{
-			sendall(clientfd, buffer, 2);
+			sendall(clientfd, buffer, 4);
 		}
 		
 	}else if(strcmp(command.c_str(),"READ") == 0){
-
+		if(messageHandler.getResult()){
+			sendall(clientfd, buffer, MAXDATASIZE-1);
+		}else{
+			sendall(clientfd, buffer, 4);
+		}
 		
 	}else if(strcmp(command.c_str(),"DEL") == 0){
-
+		if(messageHandler.getResult()){
+			sendall(clientfd, buffer, MAXDATASIZE-1);
+		}else{
+			sendall(clientfd, buffer, 4);
+		}
 		
 	}else if(strcmp(command.c_str(),"QUIT") == 0){
 		exit(1);
@@ -140,8 +148,9 @@ void streamSocketServer::handleRecv (char * buffer) {
 		cout << "dunno it fam (buffer size: " << strlen(buffer) << "), bytes send: " << sendall(clientfd, buffer, strlen(buffer)) << endl;
 	}
 	
+	delete[] buffer;
 	//delete[] buffercopy; // free buffercopy, dont need it anymore
-	memset(buffer, 0, strlen(buffer));	
+	//memset(buffer, 0, strlen(buffer));	
 }
 
 //start the recv/send loop

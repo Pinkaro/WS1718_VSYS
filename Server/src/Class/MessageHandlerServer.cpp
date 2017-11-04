@@ -1,7 +1,7 @@
 #include "./src/Header/MessageHandlerServer.h"
 
 MessageHandlerServer::MessageHandlerServer(char* _buffer, char* _path) {
-	this->buffer = _buffer;
+	this->buffer = string(_buffer);
 	this->path = string (_path);
 	this->messageResult = false;
 }
@@ -16,16 +16,21 @@ bool MessageHandlerServer::getResult() {
 
 // checks if a file exists in a specific path
 bool MessageHandlerServer::doesFileExist (string filepath) {
-	ifstream checkFile (filepath);
-	return checkFile.good();
+	cout << "created file ifstream at path" << filepath << endl;
+	if(ifstream(filepath)){
+		return true;
+	}else{
+		return false;
+	}
 }
 
 // count *.txt files in a directory with the nameconvention of 1.txt, 2.txt, 3.txt
 int MessageHandlerServer::countFilesInDirectory (string directorypath) {
 	int counter = 1;
 	string filepath = directorypath + to_string(counter) + ".txt";
-	
+	cout << "counting files ..." << endl;
 	while(doesFileExist(filepath.c_str())) {
+		cout << "round " << counter << endl;
 		counter++;
 		filepath.clear();
 		filepath = directorypath + to_string(counter) + ".txt";
@@ -43,12 +48,34 @@ bool MessageHandlerServer::createFileAtPath(string filePath, string name, string
 	
 	if(newFile.is_open()){
 		newFile << message;
-		newFile.close();
+		newFile.clear();
 		messageResult = true;
 		return true;
 	}
 	cerr << "Error: " << strerror(errno);
 	return false;
+}
+
+bool MessageHandlerServer::deleteFileAtPath(string filepath) {
+	if( (remove(filepath.c_str())) != 0 ) {
+		perror("DEL ERR\n");
+		return false;
+	}else {
+		return true;
+	}
+}
+
+string MessageHandlerServer::getFullMail(string filePath) {
+	ifstream file(filePath);
+	string line;
+	string fullMail;
+	
+	if(file.is_open()){
+		while( (getline(file, line)) ) {
+			fullMail += line + "\n";
+		}
+	}
+	return fullMail;
 }
 
 string MessageHandlerServer::getTopicOfMail(string filePath) {
@@ -59,6 +86,7 @@ string MessageHandlerServer::getTopicOfMail(string filePath) {
 		for(int i = 1; i <= 3; i++) { //change the parameter to receive different information from mail (e.g.: 3 = topic)
 			getline(file, topic);
 		}
+		file.clear();
 		return topic;
 		
 	}else{
@@ -94,11 +122,53 @@ bool MessageHandlerServer::checkSendPartsLength (string * messageSplitted) {
 	return true;
 }
 
+string MessageHandlerServer::handleDel(string wholeMessage) {
+	string username = wholeMessage.substr(0, wholeMessage.find("\n"));
+	wholeMessage.erase(0, wholeMessage.find("\n") + 1);
+	string fileNumber = wholeMessage.substr(0, wholeMessage.find("\n"));
+	string filePath = path + username + "/" + fileNumber + ".txt";
+	string message;
+	
+	if( !(doesFileExist(filePath)) ) {
+		messageResult = false;
+		message = "DEL-ERR: File does not exist\n";
+		return message;
+	}
+	
+	if( !(deleteFileAtPath(filePath)) ) {
+		messageResult = false;
+		message = "DEL-ERR: Could not delete file\n";
+		return message;
+	}
+	
+	message = "OK\n";
+	return message;
+}
+
+string MessageHandlerServer::handleRead(string wholeMessage) {
+	string username = wholeMessage.substr(0, wholeMessage.find("\n"));
+	wholeMessage.erase(0, wholeMessage.find("\n") + 1);
+	string fileNumber = wholeMessage.substr(0, wholeMessage.find("\n"));
+	string filePath = path + username + "/" + fileNumber + ".txt";
+	string message;
+	
+	if( !(doesFileExist(filePath)) ) {
+		messageResult = false;
+		message = "READ-ERR\n";
+		return message;
+	}
+	
+	message = "OK\n";
+	message += getFullMail(filePath);
+	messageResult = true;
+	return message;
+}
+
 // to handle  LIST command
 // first checks how many files are in the given user's directory and sets this number in the first line
 // the following lines are followed by each respective topic
 // this information is returned as a pointer to a character array
-char* MessageHandlerServer::handleList(string username) {
+string MessageHandlerServer::handleList(string username) {
 	string userPath = path + username + "/";
 	int filesOfUser = countFilesInDirectory(userPath);
 	int counter = 1;
@@ -110,7 +180,7 @@ char* MessageHandlerServer::handleList(string username) {
 	
 	if(filesOfUser == 0) {
 		messageResult = false;
-		strcpy(buffer, replyMessage.c_str());
+		buffer = replyMessage;
 		return buffer;
 	}
 	
@@ -124,7 +194,7 @@ char* MessageHandlerServer::handleList(string username) {
 	cout << "And the following topics: " << replyMessage << endl;
 	
 	messageResult = true;
-	strcpy(buffer, replyMessage.c_str());
+	buffer = replyMessage;
 	
 	cout << "Vomiting buffer: \n" << buffer << endl;
 	
@@ -135,7 +205,7 @@ char* MessageHandlerServer::handleList(string username) {
 // to handle a SEND command
 // first splits the message into an array in 5 parts then lets checkSendPartsLength() check the validity of
 // the message, if everything goes fine it saves it in a file on the server
-char* MessageHandlerServer::handleSend(string messageWhole) {
+string MessageHandlerServer::handleSend(string messageWhole) {
 	
 	string msgCopy (messageWhole);
 	char seperator = '\n';
@@ -147,26 +217,27 @@ char* MessageHandlerServer::handleSend(string messageWhole) {
 	cout << "String size: " << messageWhole.size() << "\nSplit up to:" <<endl;
 	
 	while( counter != 3 ) {
+		cout << "Splitting round " << counter << endl;
 		messageSplitted[counter] = messageWhole.substr(0, messageWhole.find(seperator));
 		counter++;
 		temp = currentPos;
 		currentPos = messageWhole.find(seperator, temp) + 1;
 		messageWhole.erase(0, messageWhole.find(seperator) + 1);
 	}
-	
+	cout << "After split" << endl;
 	messageSplitted[3] = messageWhole.substr(0, messageWhole.find(".\n"));
 	messageWhole.erase(0, messageWhole.find(".\n"));
 	messageSplitted[4] = messageWhole;
-	
+	cout << "After splitting rest of the message" << endl;
 	// validate for correct input
 	if(!checkSendPartsLength(messageSplitted)) {
 		messageResult = false;
-		strcpy(buffer, "SEND: PARTS-ERR\n");
+		buffer = "SEND-Err Parts\n";
 		cout << buffer << endl;
 		return buffer;
 	}
 
-	
+	cout << "After validation" << endl;
 	const string sender = messageSplitted[0]; // if message has passed validation, sender will always be at index 0
 	string filePath = path+sender+"/";
 	
@@ -185,11 +256,11 @@ char* MessageHandlerServer::handleSend(string messageWhole) {
 	// save the email at specified path
 	if(createFileAtPath(filePath, fileName, msgCopy)){
 		messageResult = true;
-		strcpy(buffer, "OK\n");
+		buffer = "OK\n";
 		return buffer;
 	}else{
 		messageResult = false;
-		strcpy(buffer, "ERR\n");
+		buffer = "ERR\n";
 		return buffer;
 	}
 }
@@ -201,28 +272,34 @@ char* MessageHandlerServer::HandleMessage() {
 	string command = message.substr(0, message.find("\n"));
 	//delete command line, don't need it anymore
 	message.erase(0, message.find("\n") + 1);
+	char* backSender = new char[1024];
 	
 	if(strcmp(command.c_str(),"SEND") == 0){
-		return handleSend(message);
+		buffer = handleSend(message);
+		strcpy(backSender, buffer.c_str());
+		return backSender;
 		
 	}else if(strcmp(command.c_str(),"LIST") == 0){
-		char* test = handleList(message.substr(0, message.size() - 1));
-		cout << "Buffer before sending over to StreamSocketServer: " << test << endl;
-		return test;
+		buffer = handleList(message.substr(0, message.size() - 1));
+		strcpy(backSender, buffer.c_str());
+		return backSender;
 		
 	}else if(strcmp(command.c_str(),"READ") == 0){
-		
+		buffer = handleRead(message);
+		strcpy(backSender, buffer.c_str());
+		return backSender;
 		
 	}else if(strcmp(command.c_str(),"DEL") == 0){
-		
+		buffer = handleDel(message);
+		strcpy(backSender, buffer.c_str());
+		return backSender;
 		
 	}else if(strcmp(command.c_str(),"QUIT") == 0){
 		exit(1);
 		
-	}else{
-		
 	}
-	memset(buffer, 0, strlen(buffer));
-	strcpy(buffer, "ERR\n");
-	return buffer;
+	
+	buffer = "NO COMMAND ERR\n";
+	strcpy(backSender, buffer.c_str());
+	return backSender;
 }

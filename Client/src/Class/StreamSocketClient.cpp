@@ -68,14 +68,43 @@ int streamSocketClient::recvall (int sockfd, char* buffer) {
 	return total;
 }
 
-int streamSocketClient::handleList(char * buffer) {
-	string userName;
+int streamSocketClient::handleDel(char* buffer) {
+	string username;
+	string messageNumber;
 	string messageWhole(buffer);
 	
 	cout << "\nUsername: ";
-	getline(cin, userName);
-	userName.append("\n");
-	messageWhole.append(userName);
+	getline(cin, username);
+	username.append("\n");
+	messageWhole.append(username);
+	
+	cout << "\nMessage number: ";
+	getline(cin, messageNumber);
+	messageNumber.append("\n");
+	messageWhole.append(messageNumber);
+	
+		// make sure buffer is empty
+	memset(buffer, 0, strlen(buffer));
+	strcpy(buffer, messageWhole.c_str());
+	
+	string buffer_str(buffer);
+	return sendall(sockfd, buffer, buffer_str.size());
+}
+
+int streamSocketClient::handleRead(char* buffer) {
+	string username;
+	string messageNumber;
+	string messageWhole(buffer);
+	
+	cout << "\nUsername: ";
+	getline(cin, username);
+	username.append("\n");
+	messageWhole.append(username);
+	
+	cout << "Message number: ";
+	getline(cin, messageNumber);
+	messageNumber.append("\n");
+	messageWhole.append(messageNumber);
 	
 	// make sure buffer is empty
 	memset(buffer, 0, strlen(buffer));
@@ -85,7 +114,24 @@ int streamSocketClient::handleList(char * buffer) {
 	return sendall(sockfd, buffer, buffer_str.size());
 }
 
-int streamSocketClient::handleSend(char * buffer) {
+int streamSocketClient::handleList(char* buffer) {
+	string username;
+	string messageWhole(buffer);
+	
+	cout << "\nUsername: ";
+	getline(cin, username);
+	username.append("\n");
+	messageWhole.append(username);
+	
+	// make sure buffer is empty
+	memset(buffer, 0, strlen(buffer));
+	strcpy(buffer, messageWhole.c_str());
+	
+	string buffer_str(buffer);
+	return sendall(sockfd, buffer, buffer_str.size());
+}
+
+int streamSocketClient::handleSend(char* buffer) {
 	string sender;
 	string recipient;
 	string topic;
@@ -130,14 +176,16 @@ void streamSocketClient::handleRecv(char * buffer) {
 	fgets(buffer, MAXDATASIZE, stdin);
 	
 	if(strcmp(buffer, "SEND\n") == 0){
-		cout << "Bytes sent: " << handleSend(buffer) << endl;
+		cout << "(SEND) Bytes sent: " << handleSend(buffer) << endl;
 		
 	}else if(strcmp(buffer,"LIST\n") == 0){
-		cout << "Bytes sent: " << handleList(buffer) << endl;
+		cout << "(LIST) Bytes sent: " << handleList(buffer) << endl;
 		
 	}else if(strcmp(buffer,"READ\n") == 0){
+		cout << "(READ) Bytes sent: " << handleRead(buffer) << endl;
 		
 	}else if(strcmp(buffer,"DEL\n") == 0){
+		cout << "(DEL) Bytes sent: " << handleRead(buffer) << endl;
 		
 	}else if(strcmp(buffer,"QUIT\n") == 0){
 		exit(1);

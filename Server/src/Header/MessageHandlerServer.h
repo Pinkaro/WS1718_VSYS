@@ -20,19 +20,21 @@ public:
 	bool getResult();
 	
 private:
-	char*  buffer;
+	string buffer;
 	bool messageResult;
 	string path;
 	
-	char* handleSend(string wholeMessage);
-	char* handleList(string username);
-	char* handleRead();
-	char* handleDel();
+	string handleSend(string wholeMessage);
+	string handleList(string username);
+	string handleRead(string wholeMessage);
+	string handleDel(string wholeMessage);
 	bool checkSendPartsLength (string * messageSplitted);
 	bool doesFileExist (string filepath);
 	bool createFileAtPath(string path, string name, string message);
+	bool deleteFileAtPath(string filepath);
 	int countFilesInDirectory (string directorypath);
 	string getTopicOfMail(string filePath);
+	string getFullMail(string filePath);
 	
 };
 
