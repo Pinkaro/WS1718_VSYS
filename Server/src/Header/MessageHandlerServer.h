@@ -25,13 +25,14 @@ private:
 	string path;
 	
 	char* handleSend(string wholeMessage);
-	char* handleList();
+	char* handleList(string username);
 	char* handleRead();
 	char* handleDel();
 	bool checkSendPartsLength (string * messageSplitted);
 	bool doesFileExist (string filepath);
 	bool createFileAtPath(string path, string name, string message);
 	int countFilesInDirectory (string directorypath);
+	string getTopicOfMail(string filePath);
 	
 };
 

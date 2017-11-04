@@ -35,9 +35,11 @@ int MessageHandlerServer::countFilesInDirectory (string directorypath) {
 }
 
 // creates a new file at the passed path and insert message
-bool MessageHandlerServer::createFileAtPath(string path, string name, string message) {
-	string fullPath = path + name;
+bool MessageHandlerServer::createFileAtPath(string filePath, string name, string message) {
+	string fullPath = filePath + name;
 	ofstream newFile (fullPath.c_str());
+	
+	cout << "Entered createFileAtPath() function\nFull path: " << fullPath << "\nMessage: " << message << endl;
 	
 	if(newFile.is_open()){
 		newFile << message;
@@ -45,7 +47,24 @@ bool MessageHandlerServer::createFileAtPath(string path, string name, string mes
 		messageResult = true;
 		return true;
 	}
+	cerr << "Error: " << strerror(errno);
 	return false;
+}
+
+string MessageHandlerServer::getTopicOfMail(string filePath) {
+	ifstream file(filePath);
+	string topic;
+	
+	if(file.is_open()) {
+		for(int i = 1; i <= 3; i++) { //change the parameter to receive different information from mail (e.g.: 3 = topic)
+			getline(file, topic);
+		}
+		return topic;
+		
+	}else{
+		cerr << "Error: " << strerror(errno);
+		exit(1);
+	}
 }
 
 // checks every part of the whole message, returns true if every test has passed.
@@ -68,11 +87,49 @@ bool MessageHandlerServer::checkSendPartsLength (string * messageSplitted) {
 		return false;
 	}
 	
-	if(ending.compare(".") != 0) {
+	if(ending.compare(".\n") != 0) {
 		return false;
 	}
 	
 	return true;
+}
+
+// to handle  LIST command
+// first checks how many files are in the given user's directory and sets this number in the first line
+// the following lines are followed by each respective topic
+// this information is returned as a pointer to a character array
+char* MessageHandlerServer::handleList(string username) {
+	string userPath = path + username + "/";
+	int filesOfUser = countFilesInDirectory(userPath);
+	int counter = 1;
+	string replyMessage = to_string(filesOfUser) + "\n";
+	string filePath;
+	
+	cout << "Determined path: " << userPath << endl;
+	cout << "I've found this many files: " << replyMessage << endl;
+	
+	if(filesOfUser == 0) {
+		messageResult = false;
+		strcpy(buffer, replyMessage.c_str());
+		return buffer;
+	}
+	
+	while(counter <= filesOfUser) {
+		filePath = userPath + to_string(counter) + ".txt";
+		replyMessage.append(getTopicOfMail(filePath));
+		replyMessage.append("\n");
+		counter++;
+	}
+	
+	cout << "And the following topics: " << replyMessage << endl;
+	
+	messageResult = true;
+	strcpy(buffer, replyMessage.c_str());
+	
+	cout << "Vomiting buffer: \n" << buffer << endl;
+	
+	return buffer;
+	
 }
 
 // to handle a SEND command
@@ -80,6 +137,7 @@ bool MessageHandlerServer::checkSendPartsLength (string * messageSplitted) {
 // the message, if everything goes fine it saves it in a file on the server
 char* MessageHandlerServer::handleSend(string messageWhole) {
 	
+	string msgCopy (messageWhole);
 	char seperator = '\n';
 	int counter = 0;
 	int currentPos = 0;
@@ -100,32 +158,37 @@ char* MessageHandlerServer::handleSend(string messageWhole) {
 	messageWhole.erase(0, messageWhole.find(".\n"));
 	messageSplitted[4] = messageWhole;
 	
-	cout << "I split the message up and initiating control of parts!" << endl;
 	// validate for correct input
 	if(!checkSendPartsLength(messageSplitted)) {
 		messageResult = false;
 		strcpy(buffer, "SEND: PARTS-ERR\n");
+		cout << buffer << endl;
 		return buffer;
 	}
-	cout << "Parts passed validation, preparing to count files" << endl;
+
 	
 	const string sender = messageSplitted[0]; // if message has passed validation, sender will always be at index 0
-	string path = path+sender+"/";
+	string filePath = path+sender+"/";
 	
 	// check if there are no files yet at the path, if there are 0, create path
 	int fileNumber;
-	if( (fileNumber = countFilesInDirectory(path) ) == 0) {
-		string createDirectoryCommand = "mkdir -p "+path;
+	if( (fileNumber = countFilesInDirectory(filePath) ) == 0) {
+		cout << "Files found: " << fileNumber << "creating directory" << endl;
+		string createDirectoryCommand = "mkdir -p "+filePath;
 		system(createDirectoryCommand.c_str());
 	}
+	cout << "Files found: " << fileNumber << "not creating directory" << endl;
 	fileNumber += 1;
 	string fileName = to_string(fileNumber) + ".txt";
 	
+	cout << "The path I'm sending over: " << filePath << endl;
 	// save the email at specified path
-	if(createFileAtPath(path, fileName, messageWhole)){
+	if(createFileAtPath(filePath, fileName, msgCopy)){
+		messageResult = true;
 		strcpy(buffer, "OK\n");
 		return buffer;
 	}else{
+		messageResult = false;
 		strcpy(buffer, "ERR\n");
 		return buffer;
 	}
@@ -143,7 +206,9 @@ char* MessageHandlerServer::HandleMessage() {
 		return handleSend(message);
 		
 	}else if(strcmp(command.c_str(),"LIST") == 0){
-		
+		char* test = handleList(message.substr(0, message.size() - 1));
+		cout << "Buffer before sending over to StreamSocketServer: " << test << endl;
+		return test;
 		
 	}else if(strcmp(command.c_str(),"READ") == 0){
 		

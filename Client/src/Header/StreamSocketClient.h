@@ -37,6 +37,7 @@ private:
 	int handleSend(char * buffer);
 	int sendall(int sockfd, char* buffer, int length);
 	int recvall(int sockfd, char* buffer);
+	int handleList(char * buffer);
 };
 
 #endif /* STREAMSOCKETCLIENT_H_ */

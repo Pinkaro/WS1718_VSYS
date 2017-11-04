@@ -110,9 +110,6 @@ void streamSocketServer::handleRecv (char * buffer) {
 	memset(buffer, 0, strlen(buffer));
 	buffer = messageHandler.HandleMessage();
 	
-	cout << "deleting buffercopy for the greater good" << endl;
-	delete[] buffercopy; // free buffercopy, dont need it anymore
-	
 	if(strcmp(command.c_str(),"SEND") == 0){
 		if(messageHandler.getResult()){
 			sendall(clientfd, buffer, 3);
@@ -121,7 +118,13 @@ void streamSocketServer::handleRecv (char * buffer) {
 		}
 		
 	}else if(strcmp(command.c_str(),"LIST") == 0){
-
+		cout << "Sending LIST result... " << endl;
+		cout << buffer << endl;
+		if(messageHandler.getResult()){
+			sendall(clientfd, buffer, MAXDATASIZE-1);
+		}else{
+			sendall(clientfd, buffer, 2);
+		}
 		
 	}else if(strcmp(command.c_str(),"READ") == 0){
 
@@ -136,9 +139,9 @@ void streamSocketServer::handleRecv (char * buffer) {
 		strcpy(buffer, "Send me a real command, dude. (STREAMSOCKET)");
 		cout << "dunno it fam (buffer size: " << strlen(buffer) << "), bytes send: " << sendall(clientfd, buffer, strlen(buffer)) << endl;
 	}
-	memset(buffer, 0, strlen(buffer));
-	cout << "cycled through all ifs in handleRecv()" << endl;
 	
+	//delete[] buffercopy; // free buffercopy, dont need it anymore
+	memset(buffer, 0, strlen(buffer));	
 }
 
 //start the recv/send loop

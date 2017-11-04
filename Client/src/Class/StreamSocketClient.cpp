@@ -68,6 +68,23 @@ int streamSocketClient::recvall (int sockfd, char* buffer) {
 	return total;
 }
 
+int streamSocketClient::handleList(char * buffer) {
+	string userName;
+	string messageWhole(buffer);
+	
+	cout << "\nUsername: ";
+	getline(cin, userName);
+	userName.append("\n");
+	messageWhole.append(userName);
+	
+	// make sure buffer is empty
+	memset(buffer, 0, strlen(buffer));
+	strcpy(buffer, messageWhole.c_str());
+	
+	string buffer_str(buffer);
+	return sendall(sockfd, buffer, buffer_str.size());
+}
+
 int streamSocketClient::handleSend(char * buffer) {
 	string sender;
 	string recipient;
@@ -106,14 +123,17 @@ int streamSocketClient::handleSend(char * buffer) {
 }
 
 void streamSocketClient::handleRecv(char * buffer) {
+	// print whatever just came in
 	cout << buffer;
 	memset(buffer, 0, strlen(buffer));
+	// get user input
 	fgets(buffer, MAXDATASIZE, stdin);
 	
 	if(strcmp(buffer, "SEND\n") == 0){
-		cout << "Bytes sent: " << handleSend(buffer);
+		cout << "Bytes sent: " << handleSend(buffer) << endl;
 		
 	}else if(strcmp(buffer,"LIST\n") == 0){
+		cout << "Bytes sent: " << handleList(buffer) << endl;
 		
 	}else if(strcmp(buffer,"READ\n") == 0){
 		
