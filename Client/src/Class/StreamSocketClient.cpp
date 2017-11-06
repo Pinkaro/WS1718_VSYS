@@ -175,6 +175,10 @@ void streamSocketClient::handleRecv(char * buffer) {
 	// get user input
 	fgets(buffer, MAXDATASIZE, stdin);
 	
+	if(!handleLogin) {
+		
+	}
+	
 	if(strcmp(buffer, "SEND\n") == 0){
 		cout << "(SEND) Bytes sent: " << handleSend(buffer) << endl;
 		

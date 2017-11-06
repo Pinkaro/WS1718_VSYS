@@ -14,11 +14,26 @@
 #include <string.h>
 #include <ctype.h>
 #include "MessageHandlerServer.h"
+#include <ldap.h>
+#include <chrono>
+
+#define LDAP_HOST "ldap.technikum-wien.at"
+#define LDAP_PORT 389
+#define SEARCHBASE "dc=technikum-wien,dc=at"
+#define SCOPE LDAP_SCOPE_SUBTREE
+#define FILTER "(uid=if17b127)"
+#define BIND_USER NULL		/* anonymous bind with user and pw NULL */
+#define BIND_PW NULL
 
 #ifndef STREAMSOCKETSERVER_H_
 #define STREAMSOCKETSERVER_H_
 
 using namespace std;
+
+struct clientinfo {
+	int clientfd;
+	struct in_addr clientaddress;
+};
 
 class streamSocketServer {
 
@@ -29,15 +44,18 @@ public:
 	void startConnection();
 	
 private:
-	struct sockaddr_in server_address, client_address;
-	int sockfd, clientfd, port;
-	char *path;
+	struct sockaddr_in server_address;
+	int sockfd, port;
+	char* path;
+	map<char*, chrono::milliseconds> bannedIPs;
 	
-	void handleRecv (char * buffer);
+	void handleRecv (char* buffer, int clientfd);
 	void setSocketOptions ();
 	void bindSocketToPort ();
-	void initCommunicationWithClient ();
-	bool handleSend(string message);
+	void initCommunicationWithClient (struct clientinfo ci);
+	bool isIpAlreadyBlocked (in_addr address);
+	bool checkLogin (char* buffer, int tryNumber, in_addr address);
+	void blockIpAddress (in_addr address);
 	bool checkSendPartsLength(string * messageSplitted);
 	int sendall (int sockfd, char* buffer, int length);
 	int recvall (int sockfd, char* buffer); 
