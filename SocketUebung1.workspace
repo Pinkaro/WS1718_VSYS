@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CodeLite_Workspace Name="SocketUebung1" Database="">
+<CodeLite_Workspace Name="SocketUebung1" Database="" Version="10.0.0">
   <Project Name="Client" Path="Client/Client.project" Active="No"/>
-  <Project Name="Server" Path="Server/Server.project" Active="No"/>
-  <Project Name="playground" Path="playground/playground.project" Active="Yes"/>
+  <Project Name="Server" Path="Server/Server.project" Active="Yes"/>
+  <Project Name="playground" Path="playground/playground.project" Active="No"/>
   <BuildMatrix>
     <WorkspaceConfiguration Name="Debug" Selected="yes">
       <Environment/>
