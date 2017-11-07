@@ -211,7 +211,6 @@ string MessageHandlerServer::handleList(string username) {
 		counter++;
 	}
 	
-	cout << "And the following topics: " << replyMessage << endl;
 	
 	messageResult = true;
 	buffer = replyMessage;
@@ -243,15 +242,14 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 	
 	// fill the rest. I did it this way as I don't know how many newlines are in a message
 	// there's a better solution but I'm too tired to implement it, so this will have to do.
-	messageSplitted[3] = messageWhole.substr(0, messageWhole.find(".\n"));
-	messageWhole.erase(0, messageWhole.find(".\n"));
+	messageSplitted[3] = messageWhole.substr(0, messageWhole.find("\n.\n"));
+	messageWhole.erase(0, messageWhole.find("\n.\n") + 1);
 	messageSplitted[4] = messageWhole;
 	// validate for correct input
 	if(!checkSendPartsLength(messageSplitted)) {
 		messageResult = false;
 		buffer = "SEND-Err Parts";
 		buffer.append(commands);
-		cout << buffer << endl;
 		return buffer;
 	}
 	const string recipient = messageSplitted[1]; // if message has passed validation, recipient will always be at index 1

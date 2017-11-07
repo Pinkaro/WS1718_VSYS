@@ -161,21 +161,19 @@ void streamSocketServer::handleRecv (char * buffer, int clientfd) {
 
 // to check if an IP is already in our map where we store blocked IP addresses
 bool streamSocketServer::isIpAlreadyBlocked (clientinfo& ci) {
-	cout << "CHECKING IF CLIENT IS STILL BLOCKED, CURRENT TRIES: " << ci.loginTries << endl;
 	if( !(bannedIPs.find(inet_ntoa(ci.clientaddress)) == bannedIPs.end()) ) { // if IP is blocked, check time
-		cout << "CLIENT IS BLOCKED, CHECK IF ENOUGH TIME HAS PASSED" << endl;
 		chrono::milliseconds now = chrono::duration_cast< chrono::milliseconds >(chrono::system_clock::now().time_since_epoch());
 		chrono::milliseconds then = bannedIPs[inet_ntoa(ci.clientaddress)];
 		
-		auto now2 = now.count();
-		auto then2 = then.count();
+		//auto now2 = now.count();
+		//auto then2 = then.count();
 		
 		auto difference = chrono::duration_cast<chrono::milliseconds> (now - then).count();
 		
-		cout << "NOW: " << now2 << endl;
-		cout << "THEN: " << then2 << endl;
-		cout << "DIFFERENCE: " << difference << endl;
-		cout << "BLOCKTIME: " << BLOCKTIME << endl;
+		//cout << "NOW: " << now2 << endl;
+		//cout << "THEN: " << then2 << endl;
+		//cout << "DIFFERENCE: " << difference << endl;
+		//cout << "BLOCKTIME: " << BLOCKTIME << endl;
 		
 		if(difference >= BLOCKTIME) { // if time difference has surpassed BLOCKTIME, unblock IP address
 			cout << "ENOUGH TIME HAS PASSED ... UNBANANING" << endl;
@@ -201,7 +199,6 @@ void streamSocketServer::blockIpAddress (clientinfo& ci) {
 // the ip address for a certain amount of time
 bool streamSocketServer::checkLogin(char* buffer, clientinfo& ci) {
 	if(ci.loginTries >= 3) {
-		cout << "CLIENT SURPASSED THREE TRIES, BLOCKING THAT FUCKER" << endl;
 		blockIpAddress(ci);
 		return false;
 	}
@@ -316,7 +313,6 @@ void streamSocketServer::initCommunicationWithClient (clientinfo ci) {
 	bool loginSuccess = false;
 	
 	while(1) {
-		cout << "Listening ..." << endl;
 		if( (bytesInBuffer = recvall (ci.clientfd, buffer)) > 0 ) {
 			buffer[bytesInBuffer] = '\0';
 		
@@ -329,7 +325,6 @@ void streamSocketServer::initCommunicationWithClient (clientinfo ci) {
 		}
 		
 		if(isIpAlreadyBlocked(ci)){
-			cout << "CLIENT IS CURRENTLY BLOCKED" << endl;
 			message = "IP-Address (" + string(inet_ntoa(ci.clientaddress)) + ") is currently blocked.";
 			message.append(commands);
 			memset(buffer, 0, bytesInBuffer); // zero out the buffer
@@ -339,7 +334,6 @@ void streamSocketServer::initCommunicationWithClient (clientinfo ci) {
 		}
 		
 		if(loginSuccess) { // login succeeded, we will handle the message
-			cout << "CLIENT IS NOT BLOCKED AND LOGGED IN, HE CAN PROCEED" << endl;
 			handleRecv(buffer, ci.clientfd);
 		}else {
 			// at this point we can only handle the Login command, send Error if not Login request
@@ -353,9 +347,7 @@ void streamSocketServer::initCommunicationWithClient (clientinfo ci) {
 				continue;
 			}
 			
-			cout << "CLIENT IS NOT LOGGED IN AND NOT BLOCKED" << endl;
 			if(!checkLogin(buffer, ci)) {
-				cout << "CLIENT FAILED LOGIN, TRY: " << ci.loginTries << endl;
 				
 				perror("Login rejected.");
 				
@@ -367,7 +359,6 @@ void streamSocketServer::initCommunicationWithClient (clientinfo ci) {
 				sendall(ci.clientfd, buffer, strlen(buffer));
 				ci.loginTries++; //increment if login was rejected
 			}else{
-				cout << "CLIENT LOGGED IN SUCCESSFULLY" << endl;
 				string temp_commands = "\nSEND, LIST, READ, DEL, QUIT\nEnter command: "; // temp because we only want to send the commands like this once
 				message = "LOGIN OK\n";
 				message.append(temp_commands);
