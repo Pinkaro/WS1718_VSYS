@@ -1,15 +1,18 @@
-/*
 !/.gitignore
+Makefile
+*.workspace
+*.mk
 *.o
-!/Server
-!/Client
-/Client/*
-/Server/*
+*.project
+*.txt
+*/Debug/*
 !/Server/main.cpp
-!/Server/src/*
+!/Server/src/Class/MessageHandlerServer.cpp
+!/Server/src/Class/StreamSocketServer.cpp
+!/Server/src/Header/MessageHandlerServer.h
+!/Server/src/Header/StreamSocketServer.h
 !/Client/main.cpp
 !/Client/src/*
-/.codelite
 /.codelite/*
 /playground/*
 
