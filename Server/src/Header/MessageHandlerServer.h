@@ -23,6 +23,7 @@ private:
 	string buffer;
 	bool messageResult;
 	string path;
+	string commands; // all available commands
 	
 	string handleSend(string wholeMessage);
 	string handleList(string username);

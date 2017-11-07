@@ -4,6 +4,7 @@ MessageHandlerServer::MessageHandlerServer(char* _buffer, char* _path) {
 	this->buffer = string(_buffer);
 	this->path = string (_path);
 	this->messageResult = false;
+	commands = "\nLOGIN, SEND, LIST, READ, DEL, QUIT\nEnter command: ";
 }
 
 MessageHandlerServer::~MessageHandlerServer() {
@@ -131,13 +132,15 @@ string MessageHandlerServer::handleDel(string wholeMessage) {
 	
 	if( !(doesFileExist(filePath)) ) {
 		messageResult = false;
-		message = "DEL-ERR: File does not exist\n";
+		message = "DEL-ERR: File does not exist";
+		message.append(commands);
 		return message;
 	}
 	
 	if( !(deleteFileAtPath(filePath)) ) {
 		messageResult = false;
 		message = "DEL-ERR: Could not delete file\n";
+		message.append(commands);
 		return message;
 	}
 	
@@ -155,11 +158,13 @@ string MessageHandlerServer::handleRead(string wholeMessage) {
 	if( !(doesFileExist(filePath)) ) {
 		messageResult = false;
 		message = "READ-ERR\n";
+		message.append(commands);
 		return message;
 	}
 	
 	message = "OK\n";
 	message += getFullMail(filePath);
+	message.append(commands);
 	messageResult = true;
 	return message;
 }
@@ -181,6 +186,7 @@ string MessageHandlerServer::handleList(string username) {
 	if(filesOfUser == 0) {
 		messageResult = false;
 		buffer = replyMessage;
+		buffer.append(commands);
 		return buffer;
 	}
 	
@@ -195,6 +201,7 @@ string MessageHandlerServer::handleList(string username) {
 	
 	messageResult = true;
 	buffer = replyMessage;
+	buffer.append(commands);
 	
 	cout << "Vomiting buffer: \n" << buffer << endl;
 	
@@ -232,7 +239,8 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 	// validate for correct input
 	if(!checkSendPartsLength(messageSplitted)) {
 		messageResult = false;
-		buffer = "SEND-Err Parts\n";
+		buffer = "SEND-Err Parts";
+		buffer.append(commands);
 		cout << buffer << endl;
 		return buffer;
 	}
@@ -257,12 +265,14 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 	// save the email at specified path
 	if(createFileAtPath(filePath, fileName, msgCopy)){
 		messageResult = true;
-		buffer = "OK\n";
+		buffer = "OK";
+		buffer.append(commands);
 		//MUTEX.unlock
 		return buffer;
 	}else{
 		messageResult = false;
-		buffer = "ERR\n";
+		buffer = "ERR";
+		buffer.append(commands);
 		//MUTEX.unlock
 		return buffer;
 	}
