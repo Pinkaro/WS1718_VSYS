@@ -242,6 +242,7 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 	string filePath = path+sender+"/";
 	
 	// check if there are no files yet at the path, if there are 0, create path
+	//ḾUTEX.lock
 	int fileNumber;
 	if( (fileNumber = countFilesInDirectory(filePath) ) == 0) {
 		cout << "Files found: " << fileNumber << "creating directory" << endl;
@@ -257,10 +258,12 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 	if(createFileAtPath(filePath, fileName, msgCopy)){
 		messageResult = true;
 		buffer = "OK\n";
+		//MUTEX.unlock
 		return buffer;
 	}else{
 		messageResult = false;
 		buffer = "ERR\n";
+		//MUTEX.unlock
 		return buffer;
 	}
 }
