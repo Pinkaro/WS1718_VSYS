@@ -190,14 +190,82 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
 	}
 	
 	string wholeMessage(buffer);
-	string username = wholeMessage.substr(0, wholeMessage.find("\n"));
+	string tmp = wholeMessage.substr(0, wholeMessage.find("\n"));
 	wholeMessage.erase(0, wholeMessage.find("\n") + 1);
 	string password = wholeMessage.substr(0, wholeMessage.find("\n"));
+	string username = "(uid=" + tmp + ")";
 	
 	// here check for LDAP connection, return true if user + password has been found, false otherwise
-	return true;
-	
-	
+	   LDAP *ld;			/* LDAP resource handle */
+   LDAPMessage *result, *e;	/* LDAP result handle */
+
+
+   int i,rc=0;
+
+   char *attribs[3];		/* attribute array for search */
+
+   attribs[0]=strdup("uid");		/* return uid and cn of entries */
+   attribs[1]=strdup("cn");
+   attribs[2]=NULL;		/* array must be NULL terminated */
+
+
+   /* setup LDAP connection */
+   if ((ld=ldap_init(LDAP_HOST, LDAP_PORT)) == NULL)
+   {
+      perror("ldap_init failed");
+      return false;
+   }
+
+   printf("connected to LDAP server %s on port %d\n",LDAP_HOST,LDAP_PORT);
+
+   /* anonymous bind */
+   rc = ldap_simple_bind_s(ld,BIND_USER,BIND_PW);
+
+   if (rc != LDAP_SUCCESS)
+   {
+      fprintf(stderr,"LDAP error: %s\n",ldap_err2string(rc));
+      return false;
+   }
+   else
+   {
+      printf("bind successful\n");
+   }
+
+   /* perform ldap search */
+   rc = ldap_search_s(ld, SEARCHBASE, SCOPE, username.c_str(), attribs, 0, &result);
+
+   if (rc != LDAP_SUCCESS)
+   {
+      fprintf(stderr,"LDAP search error: %s\n",ldap_err2string(rc));
+      return false;
+   }
+	//after getting an approval that the user exists we make another bind with the password this time.
+	 rc = ldap_simple_bind_s(ld,username.c_str(),password.c_str());
+
+   if (rc != LDAP_SUCCESS)
+   {
+      fprintf(stderr,"LDAP error: %s\n",ldap_err2string(rc));
+      return false;
+   }
+   else
+   {
+      printf("bind successful\n");
+   }
+   
+   // just some printing of data on the server side.
+	printf("Total results: %d\n", ldap_count_entries(ld, result));
+
+      printf("\n");
+   
+  
+   /* free memory used for result */
+   ldap_msgfree(result);
+   free(attribs[0]);
+   free(attribs[1]);
+   printf("LDAP search suceeded\n");
+   
+   ldap_unbind(ld);
+   return true;
 	
 }
 
