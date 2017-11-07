@@ -110,48 +110,50 @@ void streamSocketServer::handleRecv (char * buffer, int clientfd) {
 	//delete command line, don't need it anymore
 	message.erase(0, message.find("\n") + 1);
 	
-	cout << "###########Sending the received buffer to MessageHandler, it was: " << buffercopy << endl;
-	
 	MessageHandlerServer messageHandler = MessageHandlerServer(buffercopy, path);
 	memset(buffer, 0, strlen(buffer));
 	buffer = messageHandler.HandleMessage();
 	
 	delete[] buffercopy;
 	
+	// unneeded if/else query, is already being handled in MessageHandlerServerl.HandleMessage()
+	// update if there's still time
 	if(strcmp(command.c_str(),"SEND") == 0){
 		if(messageHandler.getResult()){
-			sendall(clientfd, buffer, 3);
+			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}else{
-			sendall(clientfd, buffer, 4);
+			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}
 		
 	}else if(strcmp(command.c_str(),"LIST") == 0){
 		if(messageHandler.getResult()){
 			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}else{
-			sendall(clientfd, buffer, 4);
+			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}
 		
 	}else if(strcmp(command.c_str(),"READ") == 0){
 		if(messageHandler.getResult()){
 			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}else{
-			sendall(clientfd, buffer, 4);
+			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}
 		
 	}else if(strcmp(command.c_str(),"DEL") == 0){
 		if(messageHandler.getResult()){
 			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}else{
-			sendall(clientfd, buffer, 4);
+			sendall(clientfd, buffer, MAXDATASIZE-1);
 		}
 		
 	}else if(strcmp(command.c_str(),"QUIT") == 0){
 		exit(1);
 		
 	}else{
-		strcpy(buffer, "Send me a real command, dude. (STREAMSOCKET)");
-		cout << "dunno it fam (buffer size: " << strlen(buffer) << "), bytes send: " << sendall(clientfd, buffer, strlen(buffer)) << endl;
+		string confusedMessage = "Send me a real command, dude.";
+		confusedMessage.append(commands);
+		strcpy(buffer, confusedMessage.c_str());
+		sendall(clientfd, buffer, strlen(buffer));
 	}
 	
 	delete[] buffer;
@@ -178,7 +180,7 @@ bool streamSocketServer::isIpAlreadyBlocked (clientinfo& ci) {
 		if(difference >= BLOCKTIME) { // if time difference has surpassed BLOCKTIME, unblock IP address
 			cout << "ENOUGH TIME HAS PASSED ... UNBANANING" << endl;
 			bannedIPs.erase(inet_ntoa(ci.clientaddress));
-			ci.loginTries = 1;
+			ci.loginTries = 0;
 			return false;
 		}else{ 
 			return true;
@@ -205,6 +207,7 @@ bool streamSocketServer::checkLogin(char* buffer, clientinfo& ci) {
 	}
 	
 	string wholeMessage(buffer);
+	wholeMessage.erase(0, wholeMessage.find("\n") + 1); // erase first line as it is only the command
 	string tmp = wholeMessage.substr(0, wholeMessage.find("\n"));
 	wholeMessage.erase(0, wholeMessage.find("\n") + 1);
 	string username = "uid=" + tmp;
@@ -291,7 +294,7 @@ bool streamSocketServer::checkLogin(char* buffer, clientinfo& ci) {
 		ldap_msgfree(result);
 		free(attribs[0]);
 		free(attribs[1]);
-		printf("LDAP search suceeded\n");
+		printf("LDAP search succeeded\n");
 		ldap_unbind(ld);
 		
 		return false;
@@ -339,6 +342,17 @@ void streamSocketServer::initCommunicationWithClient (clientinfo ci) {
 			cout << "CLIENT IS NOT BLOCKED AND LOGGED IN, HE CAN PROCEED" << endl;
 			handleRecv(buffer, ci.clientfd);
 		}else {
+			// at this point we can only handle the Login command, send Error if not Login request
+			string messageWhole(buffer);
+			string command = messageWhole.substr(0, messageWhole.find("\n"));
+			if(strcmp(command.c_str(), "LOGIN") != 0){
+				string replyMessage = "Need successful Login request to process other commands. Please retry.";
+				replyMessage.append(commands);
+				strcpy(buffer, replyMessage.c_str());
+				sendall(ci.clientfd, buffer, strlen(buffer));
+				continue;
+			}
+			
 			cout << "CLIENT IS NOT LOGGED IN AND NOT BLOCKED" << endl;
 			if(!checkLogin(buffer, ci)) {
 				cout << "CLIENT FAILED LOGIN, TRY: " << ci.loginTries << endl;
@@ -354,9 +368,9 @@ void streamSocketServer::initCommunicationWithClient (clientinfo ci) {
 				ci.loginTries++; //increment if login was rejected
 			}else{
 				cout << "CLIENT LOGGED IN SUCCESSFULLY" << endl;
-				commands = "\nSEND, LIST, READ, DEL, QUIT\nEnter command: ";
+				string temp_commands = "\nSEND, LIST, READ, DEL, QUIT\nEnter command: "; // temp because we only want to send the commands like this once
 				message = "LOGIN OK\n";
-				message.append(commands);
+				message.append(temp_commands);
 				
 				memset(buffer, 0, bytesInBuffer); // zero out the buffer
 				strcpy(buffer, message.c_str());
@@ -393,7 +407,7 @@ void streamSocketServer::startConnection() {
 		struct clientinfo ci;
 		ci.clientfd = clientfd;
 		ci.clientaddress = client_address.sin_addr;
-		ci.loginTries = 1;
+		ci.loginTries = 0;
 		
 		// thread it hard
 		thread clientThread (&streamSocketServer::initCommunicationWithClient, this, ci);

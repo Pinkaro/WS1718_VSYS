@@ -17,7 +17,7 @@ void checkGivenArguments (int argCounter, char *argValues[]) {
 
 	int port = atoi(argValues[2]);
 	//to check if port number is within reasonable scope
-	if(port <= 1023 || port > 65535) {
+	if(port < 1023 || port > 65535) {
 		perror("port is out of range (must be greater than 1023 and lesser than 65535)\nExpected: <path> <port>");
 		exit(1);
 	}

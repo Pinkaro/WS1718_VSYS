@@ -158,7 +158,7 @@ int streamSocketClient::handleSend(char* buffer) {
 
 int streamSocketClient::handleLogin(char* buffer) {
 	string password;
-	string messageWhole;
+	string messageWhole(buffer);
 	
 	cout << "\nUsername: ";
 	getline(cin, userNameTemp);
@@ -213,6 +213,8 @@ void streamSocketClient::handleRecv(char* buffer) {
 		
 	}else if(strcmp(buffer,"QUIT\n") == 0){
 		exit(1);
+	}else {
+		sendall(sockfd, buffer, MAXDATASIZE-1);
 	}
 	
 	memset(buffer, 0, strlen(buffer));
