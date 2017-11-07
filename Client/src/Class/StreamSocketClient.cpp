@@ -75,7 +75,6 @@ int streamSocketClient::handleDel(char* buffer) {
 	string messageWhole(buffer);
 	
 	messageWhole.append(userNameGlobal);
-	messageWhole.append("\n");
 	
 	cout << "\nMessage number: ";
 	getline(cin, messageNumber);
@@ -95,12 +94,13 @@ int streamSocketClient::handleRead(char* buffer) {
 	string messageWhole(buffer);
 	
 	messageWhole.append(userNameGlobal);
-	messageWhole.append("\n");
 	
 	cout << "Message number: ";
 	getline(cin, messageNumber);
 	messageNumber.append("\n");
 	messageWhole.append(messageNumber);
+	
+	cout << "The string I'm sending is: \n" << messageWhole << endl;
 	
 	// make sure buffer is empty
 	memset(buffer, 0, strlen(buffer));
@@ -114,7 +114,6 @@ int streamSocketClient::handleList(char* buffer) {
 	string messageWhole(buffer);
 	
 	messageWhole.append(userNameGlobal);
-	messageWhole.append("\n");
 	
 	// make sure buffer is empty
 	memset(buffer, 0, strlen(buffer));
@@ -131,7 +130,6 @@ int streamSocketClient::handleSend(char* buffer) {
 	string messageWhole(buffer);
 		
 	messageWhole.append(userNameGlobal);
-	messageWhole.append("\n");
 	
 	cout << "Recipient: ";
 	getline(cin, recipient);
@@ -187,23 +185,20 @@ void streamSocketClient::handleRecv(char* buffer) {
 	// if login has not succeeded yet, check for status sent by server
 	if(!loginSuccess) {
 		string messageWhole (buffer);
-		string status = messageWhole.substr(0, messageWhole.find("\n")); // extract status of sent command
+		string status = messageWhole.substr(0, messageWhole.find("\n") + 1); // extract status of sent command
 		
-		if(strcmp(status.c_str(), "LOGIN OK\n")) { // if server tells us that we successfully logged in, we set the global username
+		if(strcmp(status.c_str(), "LOGIN OK\n") == 0) { // if server tells us that we successfully logged in, we set the global username
 			loginSuccess = true;
 			userNameGlobal = userNameTemp;
 		}
 	}
-	
-	
 	memset(buffer, 0, strlen(buffer));
-	
 	fgets(buffer, MAXDATASIZE, stdin);
 	
-	if(strcmp(buffer, "LOGIN\n") == 0){
+	if( (strcmp(buffer, "LOGIN\n") == 0 ) && !loginSuccess){
 		cout << "(LOGIN) Bytes sent: " << handleLogin(buffer) << endl;
 		
-	}else if(strcmp(buffer, "SEND\n")) {
+	}else if(strcmp(buffer, "SEND\n") == 0 ) {
 		cout << "(SEND) Bytes sent: " << handleSend(buffer) << endl;
 		
 	}
@@ -214,7 +209,7 @@ void streamSocketClient::handleRecv(char* buffer) {
 		cout << "(READ) Bytes sent: " << handleRead(buffer) << endl;
 		
 	}else if(strcmp(buffer,"DEL\n") == 0){
-		cout << "(DEL) Bytes sent: " << handleRead(buffer) << endl;
+		cout << "(DEL) Bytes sent: " << handleDel(buffer) << endl;
 		
 	}else if(strcmp(buffer,"QUIT\n") == 0){
 		exit(1);

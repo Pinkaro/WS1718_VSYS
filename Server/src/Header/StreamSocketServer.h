@@ -24,7 +24,7 @@
 #define FILTER "(uid=if17b124)"
 #define BIND_USER NULL		/* anonymous bind with user and pw NULL */
 #define BIND_PW NULL
-#define BLOCKTIME 5000 //blocktime in milliseconds
+#define BLOCKTIME 15000 //blocktime in milliseconds
 
 #ifndef STREAMSOCKETSERVER_H_
 #define STREAMSOCKETSERVER_H_
@@ -34,6 +34,7 @@ using namespace std;
 struct clientinfo {
 	int clientfd;
 	struct in_addr clientaddress;
+	int loginTries;
 };
 
 class streamSocketServer {
@@ -55,10 +56,10 @@ private:
 	void handleRecv (char* buffer, int clientfd);
 	void setSocketOptions ();
 	void bindSocketToPort ();
-	void initCommunicationWithClient (struct clientinfo ci);
-	bool isIpAlreadyBlocked (in_addr address);
-	bool checkLogin (char* buffer, int tryNumber, in_addr address);
-	void blockIpAddress (in_addr address);
+	void initCommunicationWithClient (clientinfo ci);
+	bool isIpAlreadyBlocked (clientinfo& ci);
+	bool checkLogin (char* buffer, clientinfo& ci);
+	void blockIpAddress (clientinfo& ci);
 	bool checkSendPartsLength(string * messageSplitted);
 	int sendall (int sockfd, char* buffer, int length);
 	int recvall (int sockfd, char* buffer); 
