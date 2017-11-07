@@ -197,6 +197,7 @@ void streamSocketClient::handleRecv(char* buffer) {
 	cout << buffer;
 	memset(buffer, 0, strlen(buffer));
 	
+	// ############# CONTINUE HERE, ALEX ################
 	if(loginSuccess) {
 		// if we got past login, get user input for command
 		fgets(buffer, MAXDATASIZE, stdin);
