@@ -1,0 +1,15 @@
+/*
+!/.gitignore
+*.o
+!/Server
+!/Client
+/Client/*
+/Server/*
+!/Server/main.cpp
+!/Server/src/*
+!/Client/main.cpp
+!/Client/src/*
+/.codelite
+/.codelite/*
+/playground/*
+
