@@ -5,10 +5,10 @@
 #include <fstream>
 #include <regex>
 #include <mutex>
+#include <unistd.h>
 
 #ifndef MESSAGEHANDLERSERVER_H_
 #define MESSAGEHANDLERSERVER_H_
-
 using namespace std;
 
 class MessageHandlerServer {
@@ -21,6 +21,7 @@ public:
 	bool getResult();
 	
 private:
+	pthread_mutex_t lock;
 	string buffer;
 	bool messageResult;
 	string path;
