@@ -346,6 +346,7 @@ void streamSocketServer::startConnection() {
 		ci.clientfd = clientfd;
 		ci.clientaddress = client_address.sin_addr;
 		
+		// thread it hard
 		thread clientThread (&streamSocketServer::initCommunicationWithClient, this, ci);
 		clientThread.detach();
 	}
