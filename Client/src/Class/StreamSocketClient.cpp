@@ -200,7 +200,7 @@ void streamSocketClient::handleRecv(char* buffer) {
 	
 	fgets(buffer, MAXDATASIZE, stdin);
 	
-	if(strcmp(buffer, "LOGIN\n") == 0){
+	if( (strcmp(buffer, "LOGIN\n") == 0 ) && !loginSuccess){
 		cout << "(LOGIN) Bytes sent: " << handleLogin(buffer) << endl;
 		
 	}else if(strcmp(buffer, "SEND\n")) {

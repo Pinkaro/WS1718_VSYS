@@ -152,7 +152,7 @@ void streamSocketServer::handleRecv (char * buffer, int clientfd) {
 		cout << "dunno it fam (buffer size: " << strlen(buffer) << "), bytes send: " << sendall(clientfd, buffer, strlen(buffer)) << endl;
 	}
 	
-	delete[] buffer;	
+	delete[] buffer;
 }
 
 // to check if an IP is already in our map where we store blocked IP addresses
@@ -320,6 +320,7 @@ void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 				sendall(ci.clientfd, buffer, strlen(buffer));
 				tryNumber++; //increment if login was rejected
 			}else{
+				commands = "\nSEND, LIST, READ, DEL, QUIT\nEnter command: ";
 				message = "LOGIN OK\n";
 				message.append(commands);
 				

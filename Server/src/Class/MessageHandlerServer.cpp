@@ -4,7 +4,7 @@ MessageHandlerServer::MessageHandlerServer(char* _buffer, char* _path) {
 	this->buffer = string(_buffer);
 	this->path = string (_path);
 	this->messageResult = false;
-	commands = "\nLOGIN, SEND, LIST, READ, DEL, QUIT\nEnter command: ";
+	this->commands = "\nLOGIN, SEND, LIST, READ, DEL, QUIT\nEnter command: ";
 }
 
 MessageHandlerServer::~MessageHandlerServer() {
@@ -17,7 +17,6 @@ bool MessageHandlerServer::getResult() {
 
 // checks if a file exists in a specific path
 bool MessageHandlerServer::doesFileExist (string filepath) {
-	cout << "created file ifstream at path" << filepath << endl;
 	if(ifstream(filepath)){
 		return true;
 	}else{
@@ -55,6 +54,25 @@ bool MessageHandlerServer::createFileAtPath(string filePath, string name, string
 	}
 	cerr << "Error: " << strerror(errno);
 	return false;
+}
+
+// as files are saved as follow: 1.txt, 2.txt, 3.txt, ...
+// we have to rename all following files if one gets deleted in between
+void MessageHandlerServer::renameFilesAfterFilename(int fileNumber, string path) {
+	string fileNameOld;
+	string fileNameNew;
+	
+	while(doesFileExist(path + to_string(fileNumber+1) + ".txt")){ // if next file exists
+		fileNameOld = path + to_string(fileNumber+1) + ".txt";
+		fileNameNew = path + to_string(fileNumber) + ".txt";
+		
+		if(rename(fileNameOld.c_str(), fileNameNew.c_str()) == 0) {
+			fileNumber++;
+		}else {
+			perror("FILE RENAME ERROR\n");
+			break;
+		}
+	}
 }
 
 bool MessageHandlerServer::deleteFileAtPath(string filepath) {
@@ -127,6 +145,7 @@ string MessageHandlerServer::handleDel(string wholeMessage) {
 	string username = wholeMessage.substr(0, wholeMessage.find("\n"));
 	wholeMessage.erase(0, wholeMessage.find("\n") + 1);
 	string fileNumber = wholeMessage.substr(0, wholeMessage.find("\n"));
+	string directoryPath = path + username + "/";
 	string filePath = path + username + "/" + fileNumber + ".txt";
 	string message;
 	
@@ -143,6 +162,8 @@ string MessageHandlerServer::handleDel(string wholeMessage) {
 		message.append(commands);
 		return message;
 	}
+	
+	renameFilesAfterFilename(atoi(fileNumber.c_str()), directoryPath);
 	
 	message = "OK\n";
 	return message;
