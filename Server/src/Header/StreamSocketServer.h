@@ -21,7 +21,7 @@
 #define LDAP_PORT 389
 #define SEARCHBASE "dc=technikum-wien,dc=at"
 #define SCOPE LDAP_SCOPE_SUBTREE
-#define FILTER "(uid=if17b127)"
+#define FILTER "(uid=if17b124)"
 #define BIND_USER NULL		/* anonymous bind with user and pw NULL */
 #define BIND_PW NULL
 #define BLOCKTIME 5000 //blocktime in milliseconds

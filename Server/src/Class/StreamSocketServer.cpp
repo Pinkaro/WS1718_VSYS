@@ -192,8 +192,8 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
 	string wholeMessage(buffer);
 	string tmp = wholeMessage.substr(0, wholeMessage.find("\n"));
 	wholeMessage.erase(0, wholeMessage.find("\n") + 1);
-	string password = wholeMessage.substr(0, wholeMessage.find("\n"));
-	string username = "(uid=" + tmp + ")";
+	string username = "uid=" + tmp;
+	string passwordClean = wholeMessage.substr(0, wholeMessage.find("\n"));
 	
 	// here check for LDAP connection, return true if user + password has been found, false otherwise
 	LDAP *ld;			/* LDAP resource handle */
@@ -239,8 +239,17 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
       fprintf(stderr,"LDAP search error: %s\n",ldap_err2string(rc));
       return false;
    }
+   e = ldap_first_entry(ld, result);
+   string dn = ldap_get_dn(ld,e);
+   cout << dn << endl;
+   
+  
+      // just some printing of data on the server side.
+	printf("Total results: %d\n", ldap_count_entries(ld, result));
 	//after getting an approval that the user exists we make another bind with the password this time.
-	 rc = ldap_simple_bind_s(ld,username.c_str(),password.c_str());
+	cout << username << endl;
+	 
+	 rc = ldap_simple_bind_s(ld,dn.c_str(),passwordClean.c_str());
 
    if (rc != LDAP_SUCCESS)
    {
@@ -252,9 +261,6 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
       printf("bind successful\n");
    }
    
-   // just some printing of data on the server side.
-	printf("Total results: %d\n", ldap_count_entries(ld, result));
-
       printf("\n");
    
   
