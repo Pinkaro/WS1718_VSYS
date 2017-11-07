@@ -33,10 +33,12 @@ private:
 	char * ip;
 	int port;
 	bool loginSuccess;
-	string userNameGlobal;
+	string userNameGlobal; // only sets when server responds that login was successful
+	string userNameTemp; // always sets to which username has currently been sent to server
+
 	
 	void handleRecv(char* buffer);
-	void handleLogin(char* buffer);
+	int handleLogin(char* buffer);
 	int handleSend(char* buffer);
 	int handleRead(char* buffer);
 	int handleDel(char* buffer);

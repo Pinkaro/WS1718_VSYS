@@ -196,8 +196,8 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
 	string username = "(uid=" + tmp + ")";
 	
 	// here check for LDAP connection, return true if user + password has been found, false otherwise
-	   LDAP *ld;			/* LDAP resource handle */
-   LDAPMessage *result, *e;	/* LDAP result handle */
+	LDAP *ld;			/* LDAP resource handle */
+	LDAPMessage *result, *e;	/* LDAP result handle */
 
 
    int i,rc=0;
