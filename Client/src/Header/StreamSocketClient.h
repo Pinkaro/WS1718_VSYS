@@ -32,8 +32,10 @@ private:
 	struct sockaddr_in server_address;
 	char * ip;
 	int port;
+	bool loginSuccess;
 	
 	void handleRecv(char* buffer);
+	void handleLogin(char* buffer);
 	int handleSend(char* buffer);
 	int handleRead(char* buffer);
 	int handleDel(char* buffer);

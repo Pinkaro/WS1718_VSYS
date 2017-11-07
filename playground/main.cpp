@@ -161,10 +161,13 @@ int main(int argc, char **argv)
 	sleep(5);
 	chrono::milliseconds then = chrono::duration_cast< chrono::milliseconds >(chrono::system_clock::now().time_since_epoch());
 	
-	auto ms = chrono::duration_cast<chrono::milliseconds> (then - now).count();
+	chrono::milliseconds combined = now + then;
+	
+	auto ms = chrono::duration_cast<chrono::milliseconds> (now - then).count();
 	
 	double ms2 = ms/1000;
 	
 	cout << ms2 << " Seconds" << endl;
+	cout << chrono::duration_cast<chrono::milliseconds> (combined).count() << endl;
    
 }

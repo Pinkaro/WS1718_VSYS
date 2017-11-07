@@ -5,6 +5,7 @@
 streamSocketClient::streamSocketClient(char * _ip, char * _port) {
 	ip = _ip;
 	port = atoi(_port);
+	loginSuccess = false;
 	
 	//make sure that the struct is empty
 	memset(&server_address, 0, sizeof(server_address));
@@ -168,35 +169,58 @@ int streamSocketClient::handleSend(char* buffer) {
 	return sendall(sockfd, buffer, buffer_str.size());
 }
 
-void streamSocketClient::handleRecv(char * buffer) {
+void streamSocketClient::handleLogin(char* buffer) {
+	string username;
+	string password;
+	string messageWhole;
+	
+	cout << "\nUsername: ";
+	getline(cin, username);
+	username.append("\n");
+	messageWhole.append(username);
+	
+	cout << "Password: ";
+	getline(cin, password);
+	username.append("\n");
+	messageWhole.append(password);
+	
+	//make sure buffer is empty
+	memset(buffer, 0, strlen(buffer));
+	strcpy(buffer, messageWhole.c_str());
+	
+	string buffer_str (buffer);
+	sendall(sockfd, buffer, buffer_str.size());
+}
+
+void streamSocketClient::handleRecv(char* buffer) {
 	// print whatever just came in
 	cout << buffer;
 	memset(buffer, 0, strlen(buffer));
-	// get user input
-	fgets(buffer, MAXDATASIZE, stdin);
 	
-	if(!handleLogin) {
+	if(loginSuccess) {
+		// if we got past login, get user input for command
+		fgets(buffer, MAXDATASIZE, stdin);
 		
+		if(strcmp(buffer, "SEND\n") == 0){
+			cout << "(SEND) Bytes sent: " << handleSend(buffer) << endl;
+			
+		}else if(strcmp(buffer,"LIST\n") == 0){
+			cout << "(LIST) Bytes sent: " << handleList(buffer) << endl;
+			
+		}else if(strcmp(buffer,"READ\n") == 0){
+			cout << "(READ) Bytes sent: " << handleRead(buffer) << endl;
+			
+		}else if(strcmp(buffer,"DEL\n") == 0){
+			cout << "(DEL) Bytes sent: " << handleRead(buffer) << endl;
+			
+		}else if(strcmp(buffer,"QUIT\n") == 0){
+			exit(1);
+		}
+	}else {
+		handleLogin(buffer);
 	}
 	
-	if(strcmp(buffer, "SEND\n") == 0){
-		cout << "(SEND) Bytes sent: " << handleSend(buffer) << endl;
-		
-	}else if(strcmp(buffer,"LIST\n") == 0){
-		cout << "(LIST) Bytes sent: " << handleList(buffer) << endl;
-		
-	}else if(strcmp(buffer,"READ\n") == 0){
-		cout << "(READ) Bytes sent: " << handleRead(buffer) << endl;
-		
-	}else if(strcmp(buffer,"DEL\n") == 0){
-		cout << "(DEL) Bytes sent: " << handleRead(buffer) << endl;
-		
-	}else if(strcmp(buffer,"QUIT\n") == 0){
-		exit(1);
-		
-	}else{
-		
-	}
+	
 	memset(buffer, 0, strlen(buffer));
 }
 

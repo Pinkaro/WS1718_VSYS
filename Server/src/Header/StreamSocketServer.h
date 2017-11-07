@@ -24,6 +24,7 @@
 #define FILTER "(uid=if17b127)"
 #define BIND_USER NULL		/* anonymous bind with user and pw NULL */
 #define BIND_PW NULL
+#define BLOCKTIME 5000 //blocktime in milliseconds
 
 #ifndef STREAMSOCKETSERVER_H_
 #define STREAMSOCKETSERVER_H_
@@ -47,8 +48,8 @@ private:
 	struct sockaddr_in server_address;
 	int sockfd, port;
 	char* path;
-	map<char*, chrono::milliseconds> bannedIPs;
-	
+	map<char*, chrono::milliseconds> bannedIPs; // map to store currently banned IP addresses, key is the IP address itself
+												// value is the timestamp in milliseconds
 	void handleRecv (char* buffer, int clientfd);
 	void setSocketOptions ();
 	void bindSocketToPort ();

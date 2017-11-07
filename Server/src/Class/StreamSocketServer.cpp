@@ -157,13 +157,26 @@ void streamSocketServer::handleRecv (char * buffer, int clientfd) {
 
 // to check if an IP is already in our map where we store blocked IP addresses
 bool streamSocketServer::isIpAlreadyBlocked (in_addr address) {
-	return !( bannedIPs.find(inet_ntoa(address)) == bannedIPs.end() );
+	if( !(bannedIPs.find(inet_ntoa(address)) == bannedIPs.end()) ) { // if IP is blocked, check time
+		chrono::milliseconds now = chrono::duration_cast< chrono::milliseconds >(chrono::system_clock::now().time_since_epoch());
+		chrono::milliseconds then = bannedIPs[inet_ntoa(address)];
+		
+		auto difference = chrono::duration_cast<chrono::milliseconds> (then - now).count();
+		
+		if(difference >= BLOCKTIME) { // if time difference has surpassed BLOCKTIME, unblock IP address
+			bannedIPs.erase(inet_ntoa(address));
+			return false;
+		}else{ 
+			return true;
+		}
+	}
+	return false;
 }
 
 // adds a new ipaddress to the map of banned, only adds addresses that do not yet exist in our map
 // chrono function shamelessly copied from stackoverflow
 void streamSocketServer::blockIpAddress (in_addr address) {
-	if(isIpAlreadyBlocked(address)) {
+	if(!isIpAlreadyBlocked(address)) {
 		bannedIPs[inet_ntoa(address)] = chrono::duration_cast< chrono::milliseconds >(chrono::system_clock::now().time_since_epoch());
 	}
 }
@@ -213,20 +226,25 @@ void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 		
 		if(!isIpAlreadyBlocked(ci.clientaddress) && loginSuccess) { // if IP is not blocked and login succeeded, we will handle the message
 			handleRecv(buffer, ci.clientfd);
-		}else{
+		}else if(isIpAlreadyBlocked(ci.clientaddress)){
+			string message = "IP-Address (" + string(inet_ntoa(ci.clientaddress)) + ") is currently blocked.";
 			memset(buffer, 0, bytesInBuffer); // zero out the buffer
-			strcpy(buffer, "");
+			strcpy(buffer, message.c_str());
+			sendall(ci.clientfd, buffer, strlen(buffer));
 		}
-			
 		
 		int tryNumber; // number of tries user tried to log in
 		//check if we already succeeded the login
-		while(!loginSuccess) {
+		while(!loginSuccess && !isIpAlreadyBlocked(ci.clientaddress)) {
 			if(!checkLogin(buffer, tryNumber, ci.clientaddress)) {
 				perror("Login rejected.");
 				tryNumber++; //increment if login was rejected
 			}else{
 				loginSuccess = true;
+				break;
+			}
+			
+			if(tryNumber >= 3) {
 				break;
 			}
 		}
