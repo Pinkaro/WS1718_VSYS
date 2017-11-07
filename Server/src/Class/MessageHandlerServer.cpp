@@ -246,8 +246,8 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 	}
 
 	cout << "After validation" << endl;
-	const string sender = messageSplitted[0]; // if message has passed validation, sender will always be at index 0
-	string filePath = path+sender+"/";
+	const string recipient = messageSplitted[1]; // if message has passed validation, sender will always be at index 0
+	string filePath = path+recipient+"/";
 	
 	// check if there are no files yet at the path, if there are 0, create path
 	//ḾUTEX.lock

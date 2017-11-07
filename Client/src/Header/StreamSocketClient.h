@@ -33,6 +33,7 @@ private:
 	char * ip;
 	int port;
 	bool loginSuccess;
+	string userNameGlobal;
 	
 	void handleRecv(char* buffer);
 	void handleLogin(char* buffer);

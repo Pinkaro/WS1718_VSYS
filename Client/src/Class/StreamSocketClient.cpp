@@ -70,14 +70,11 @@ int streamSocketClient::recvall (int sockfd, char* buffer) {
 }
 
 int streamSocketClient::handleDel(char* buffer) {
-	string username;
 	string messageNumber;
 	string messageWhole(buffer);
 	
-	cout << "\nUsername: ";
-	getline(cin, username);
-	username.append("\n");
-	messageWhole.append(username);
+	messageWhole.append(userNameGlobal);
+	messageWhole.append("\n");
 	
 	cout << "\nMessage number: ";
 	getline(cin, messageNumber);
@@ -93,14 +90,11 @@ int streamSocketClient::handleDel(char* buffer) {
 }
 
 int streamSocketClient::handleRead(char* buffer) {
-	string username;
 	string messageNumber;
 	string messageWhole(buffer);
 	
-	cout << "\nUsername: ";
-	getline(cin, username);
-	username.append("\n");
-	messageWhole.append(username);
+	messageWhole.append(userNameGlobal);
+	messageWhole.append("\n");
 	
 	cout << "Message number: ";
 	getline(cin, messageNumber);
@@ -116,13 +110,10 @@ int streamSocketClient::handleRead(char* buffer) {
 }
 
 int streamSocketClient::handleList(char* buffer) {
-	string username;
 	string messageWhole(buffer);
 	
-	cout << "\nUsername: ";
-	getline(cin, username);
-	username.append("\n");
-	messageWhole.append(username);
+	messageWhole.append(userNameGlobal);
+	messageWhole.append("\n");
 	
 	// make sure buffer is empty
 	memset(buffer, 0, strlen(buffer));
@@ -133,16 +124,13 @@ int streamSocketClient::handleList(char* buffer) {
 }
 
 int streamSocketClient::handleSend(char* buffer) {
-	string sender;
 	string recipient;
 	string topic;
 	string messagePart;
 	string messageWhole(buffer);
-	
-	cout << "\nSender: ";
-	getline(cin, sender);
-	sender.append("\n");
-	messageWhole.append(sender);
+		
+	messageWhole.append(userNameGlobal);
+	messageWhole.append("\n");
 	
 	cout << "Recipient: ";
 	getline(cin, recipient);
