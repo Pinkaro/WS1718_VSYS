@@ -4,7 +4,7 @@
 void checkGivenArguments (int argCounter, char *argValues[]) {
 	if(argCounter != 3)
 	{
-		perror("invalid number of arguments\nExpected: <file> <ip-address> <port>");
+		perror("invalid number of arguments\nExpected: <ip-address> <port>");
 		exit(1);
 	}
 

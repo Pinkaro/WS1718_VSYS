@@ -4,7 +4,7 @@ MessageHandlerServer::MessageHandlerServer(char* _buffer, char* _path) {
 	this->buffer = string(_buffer);
 	this->path = string (_path);
 	this->messageResult = false;
-	this->commands = "\nLOGIN, SEND, LIST, READ, DEL, QUIT\nEnter command: ";
+	this->commands = "\nSEND, LIST, READ, DEL, QUIT\nEnter command: ";
 }
 
 MessageHandlerServer::~MessageHandlerServer() {
@@ -28,9 +28,7 @@ bool MessageHandlerServer::doesFileExist (string filepath) {
 int MessageHandlerServer::countFilesInDirectory (string directorypath) {
 	int counter = 1;
 	string filepath = directorypath + to_string(counter) + ".txt";
-	cout << "counting files ..." << endl;
 	while(doesFileExist(filepath.c_str())) {
-		cout << "round " << counter << endl;
 		counter++;
 		filepath.clear();
 		filepath = directorypath + to_string(counter) + ".txt";
@@ -43,8 +41,6 @@ int MessageHandlerServer::countFilesInDirectory (string directorypath) {
 bool MessageHandlerServer::createFileAtPath(string filePath, string name, string message) {
 	string fullPath = filePath + name;
 	ofstream newFile (fullPath.c_str());
-	
-	cout << "Entered createFileAtPath() function\nFull path: " << fullPath << "\nMessage: " << message << endl;
 	
 	if(newFile.is_open()){
 		newFile << message;
@@ -170,22 +166,13 @@ string MessageHandlerServer::handleDel(string wholeMessage) {
 }
 
 string MessageHandlerServer::handleRead(string wholeMessage) {
-	cout << "This is the message handleRead() received: " << wholeMessage << endl;
-	
-	
 	string username = wholeMessage.substr(0, wholeMessage.find("\n"));
 	wholeMessage.erase(0, wholeMessage.find("\n") + 1);
 	string fileNumber = wholeMessage.substr(0, wholeMessage.find("\n"));
 	string filePath = path + username + "/" + fileNumber + ".txt";
 	string message;
 	
-	cout << "I extracted the following from the string in handleRead(): " << endl;
-	cout << "Username: " << username << endl;
-	cout << "fileNumber: " << fileNumber << endl;
-	cout << "filepath: " << filePath << endl;
-	
 	if( !(doesFileExist(filePath)) ) {
-		cout << "file does not exist" << endl;
 		messageResult = false;
 		message = "READ-ERR\n";
 		message.append(commands);
@@ -210,9 +197,6 @@ string MessageHandlerServer::handleList(string username) {
 	string replyMessage = to_string(filesOfUser) + "\n";
 	string filePath;
 	
-	cout << "Determined path: " << userPath << endl;
-	cout << "I've found this many files: " << replyMessage << endl;
-	
 	if(filesOfUser == 0) {
 		messageResult = false;
 		buffer = replyMessage;
@@ -233,10 +217,7 @@ string MessageHandlerServer::handleList(string username) {
 	buffer = replyMessage;
 	buffer.append(commands);
 	
-	cout << "Vomiting buffer: \n" << buffer << endl;
-	
 	return buffer;
-	
 }
 
 // to handle a SEND command
@@ -250,22 +231,21 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 	int currentPos = 0;
 	string messageSplitted [5];
 	int temp = 0;
-	cout << messageWhole << "\n" << endl;
-	cout << "String size: " << messageWhole.size() << "\nSplit up to:" <<endl;
 	
-	while( counter != 5 ) {
-		cout << "Splitting round " << counter << endl;
+	// fill the first three indexes of the string array messageSplitted
+	while( counter != 3 ) {
 		messageSplitted[counter] = messageWhole.substr(0, messageWhole.find(seperator));
 		counter++;
 		temp = currentPos;
 		currentPos = messageWhole.find(seperator, temp) + 1;
 		messageWhole.erase(0, messageWhole.find(seperator) + 1);
 	}
-	cout << "After split" << endl;
+	
+	// fill the rest. I did it this way as I don't know how many newlines are in a message
+	// there's a better solution but I'm too tired to implement it, so this will have to do.
 	messageSplitted[3] = messageWhole.substr(0, messageWhole.find(".\n"));
 	messageWhole.erase(0, messageWhole.find(".\n"));
 	messageSplitted[4] = messageWhole;
-	cout << "After splitting rest of the message" << endl;
 	// validate for correct input
 	if(!checkSendPartsLength(messageSplitted)) {
 		messageResult = false;
@@ -274,24 +254,18 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 		cout << buffer << endl;
 		return buffer;
 	}
-
-	cout << "After validation" << endl;
-	const string recipient = messageSplitted[1]; // if message has passed validation, sender will always be at index 0
+	const string recipient = messageSplitted[1]; // if message has passed validation, recipient will always be at index 1
 	string filePath = path+recipient+"/";
 	
 	// check if there are no files yet at the path, if there are 0, create path
 	//ḾUTEX.lock
 	int fileNumber;
 	if( (fileNumber = countFilesInDirectory(filePath) ) == 0) {
-		cout << "Files found: " << fileNumber << "creating directory" << endl;
 		string createDirectoryCommand = "mkdir -p "+filePath;
 		system(createDirectoryCommand.c_str());
 	}
-	cout << "Files found: " << fileNumber << "not creating directory" << endl;
 	fileNumber += 1;
 	string fileName = to_string(fileNumber) + ".txt";
-	
-	cout << "The path I'm sending over: " << filePath << endl;
 	// save the email at specified path
 	if(createFileAtPath(filePath, fileName, msgCopy)){
 		messageResult = true;
@@ -313,11 +287,8 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 char* MessageHandlerServer::HandleMessage() {
 	string message(buffer);
 	
-	cout << "THIS IS THE MESSAGE I RECEIVED: " << message << endl;
-	
 	string command = message.substr(0, message.find("\n"));
-	//delete command line, don't need it anymore
-	message.erase(0, message.find("\n") + 1);
+	message.erase(0, message.find("\n") + 1); //delete command line, don't need it anymore
 	char* backSender = new char[1024];
 	
 	if(strcmp(command.c_str(),"SEND") == 0){

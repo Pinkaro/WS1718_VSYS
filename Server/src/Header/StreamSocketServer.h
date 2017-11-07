@@ -50,7 +50,7 @@ private:
 	int sockfd, port;
 	char* path;
 	string message; // message to send to client
-	string commands; // all available commands
+	string commands; // all available commands, is only use while client is not logged in
 	map<char*, chrono::milliseconds> bannedIPs; // map to store currently banned IP addresses, key is the IP address itself
 												// value is the timestamp in milliseconds
 	void handleRecv (char* buffer, int clientfd);
