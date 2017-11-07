@@ -223,7 +223,6 @@ string MessageHandlerServer::handleList(string username) {
 // first splits the message into an array in 5 parts then lets checkSendPartsLength() check the validity of
 // the message, if everything goes fine it saves it in a file on the server
 string MessageHandlerServer::handleSend(string messageWhole) {
-	
 	string msgCopy (messageWhole);
 	char seperator = '\n';
 	int counter = 0;
@@ -289,24 +288,33 @@ char* MessageHandlerServer::HandleMessage() {
 	message.erase(0, message.find("\n") + 1); //delete command line, don't need it anymore
 	char* backSender = new char[1024];
 	
+	
 	if(strcmp(command.c_str(),"SEND") == 0){
+		pthread_mutex_lock(&lock);
 		buffer = handleSend(message);
 		strcpy(backSender, buffer.c_str());
+		pthread_mutex_unlock(&lock);
 		return backSender;
 		
 	}else if(strcmp(command.c_str(),"LIST") == 0){
+		pthread_mutex_lock(&lock);
 		buffer = handleList(message.substr(0, message.find("\n")));
 		strcpy(backSender, buffer.c_str());
+		pthread_mutex_unlock(&lock);
 		return backSender;
 		
 	}else if(strcmp(command.c_str(),"READ") == 0){
+		pthread_mutex_lock(&lock);
 		buffer = handleRead(message);
 		strcpy(backSender, buffer.c_str());
+		pthread_mutex_lock(&lock);
 		return backSender;
 		
 	}else if(strcmp(command.c_str(),"DEL") == 0){
+		pthread_mutex_lock(&lock);
 		buffer = handleDel(message);
 		strcpy(backSender, buffer.c_str());
+		pthread_mutex_lock(&lock);
 		return backSender;
 		
 	}else if(strcmp(command.c_str(),"QUIT") == 0){

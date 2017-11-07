@@ -148,6 +148,7 @@ int streamSocketClient::handleSend(char* buffer) {
 		messageWhole.append(messagePart);
 	}
 	
+	
 	//make sure buffer is empty
 	memset(buffer, 0, strlen(buffer));
 	strcpy(buffer, messageWhole.c_str());
