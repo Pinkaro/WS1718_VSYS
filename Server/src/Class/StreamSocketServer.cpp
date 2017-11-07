@@ -9,7 +9,7 @@
 streamSocketServer::streamSocketServer(char * _port, char * _path){
 	port = atoi(_port);
 	path = _path;
-	//map<unsigned long, chrono::milliseconds> bannedIPs = new map<unsigned long, chrono::milliseconds>();
+	commands = "\nLOGIN, SEND, LIST, READ, DEL, QUIT\nEnter command: ";
 	
 	//make sure that the struct is empty
 	memset(&server_address, 0, sizeof(server_address));
@@ -273,8 +273,12 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
 void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 	int bytesInBuffer;
 	char buffer[MAXDATASIZE];
+	
 	//send welcome message and list of available commands
-	strcpy(buffer, "Welcome to my mail server!\nPlease send me your username and password.");
+	string welcomeMsg = "Welcome to my mail server!\nPlease send me your username and password.";
+	welcomeMsg.append(commands);
+	
+	strcpy(buffer, welcomeMsg.c_str());
 	sendall(ci.clientfd, buffer, strlen(buffer));
 	memset(buffer, 0, sizeof buffer);
 	bool loginSuccess = false;
@@ -295,7 +299,8 @@ void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 		if(!isIpAlreadyBlocked(ci.clientaddress) && loginSuccess) { // if IP is not blocked and login succeeded, we will handle the message
 			handleRecv(buffer, ci.clientfd);
 		}else if(isIpAlreadyBlocked(ci.clientaddress)){
-			string message = "IP-Address (" + string(inet_ntoa(ci.clientaddress)) + ") is currently blocked.";
+			message = "IP-Address (" + string(inet_ntoa(ci.clientaddress)) + ") is currently blocked.";
+			message.append(commands);
 			memset(buffer, 0, bytesInBuffer); // zero out the buffer
 			strcpy(buffer, message.c_str());
 			sendall(ci.clientfd, buffer, strlen(buffer));
@@ -306,8 +311,21 @@ void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 		while(!loginSuccess && !isIpAlreadyBlocked(ci.clientaddress)) {
 			if(!checkLogin(buffer, tryNumber, ci.clientaddress)) {
 				perror("Login rejected.");
+				
+				message = "LOGIN ERR\n";
+				message.append(commands);
+				
+				memset(buffer, 0, bytesInBuffer); // zero out the buffer
+				strcpy(buffer, message.c_str());
+				sendall(ci.clientfd, buffer, strlen(buffer));
 				tryNumber++; //increment if login was rejected
 			}else{
+				message = "LOGIN OK\n";
+				message.append(commands);
+				
+				memset(buffer, 0, bytesInBuffer); // zero out the buffer
+				strcpy(buffer, message.c_str());
+				sendall(ci.clientfd, buffer, strlen(buffer));
 				loginSuccess = true;
 				break;
 			}
