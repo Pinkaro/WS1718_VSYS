@@ -35,22 +35,22 @@ streamSocketServer::~streamSocketServer() {
 
 //to set the socket options, specifically to be able to reuse a port immidiately
 void streamSocketServer::setSocketOptions () {
-    printf("Set socket options ... \n");
-    int yes = 1;
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-        perror("set socket options error");
-        exit(1);
-    }
+	printf("Set socket options ... \n");
+	int yes = 1;
+	if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+		perror("set socket options error");
+		exit(1);
+	}
 }
 
 //to bind a socket to a port, duh
 void streamSocketServer::bindSocketToPort () {
-    printf("Binding socket to port ... \n");
-    if(bind(sockfd, (struct sockaddr *)&server_address, sizeof(server_address)) == -1)
-    {
-        perror("bind error");
-        exit(1);
-    }
+	printf("Binding socket to port ... \n");
+	if(bind(sockfd, (struct sockaddr *)&server_address, sizeof(server_address)) == -1)
+	{
+		perror("bind error");
+		exit(1);
+	}
 }
 
 // shamelessly copied from "Beej's Guide to network programming"
@@ -110,6 +110,8 @@ void streamSocketServer::handleRecv (char * buffer, int clientfd) {
 	//delete command line, don't need it anymore
 	message.erase(0, message.find("\n") + 1);
 	
+	cout << "###########Sending the received buffer to MessageHandler, it was: " << buffercopy << endl;
+	
 	MessageHandlerServer messageHandler = MessageHandlerServer(buffercopy, path);
 	memset(buffer, 0, strlen(buffer));
 	buffer = messageHandler.HandleMessage();
@@ -156,15 +158,27 @@ void streamSocketServer::handleRecv (char * buffer, int clientfd) {
 }
 
 // to check if an IP is already in our map where we store blocked IP addresses
-bool streamSocketServer::isIpAlreadyBlocked (in_addr address) {
-	if( !(bannedIPs.find(inet_ntoa(address)) == bannedIPs.end()) ) { // if IP is blocked, check time
+bool streamSocketServer::isIpAlreadyBlocked (clientinfo& ci) {
+	cout << "CHECKING IF CLIENT IS STILL BLOCKED, CURRENT TRIES: " << ci.loginTries << endl;
+	if( !(bannedIPs.find(inet_ntoa(ci.clientaddress)) == bannedIPs.end()) ) { // if IP is blocked, check time
+		cout << "CLIENT IS BLOCKED, CHECK IF ENOUGH TIME HAS PASSED" << endl;
 		chrono::milliseconds now = chrono::duration_cast< chrono::milliseconds >(chrono::system_clock::now().time_since_epoch());
-		chrono::milliseconds then = bannedIPs[inet_ntoa(address)];
+		chrono::milliseconds then = bannedIPs[inet_ntoa(ci.clientaddress)];
 		
-		auto difference = chrono::duration_cast<chrono::milliseconds> (then - now).count();
+		auto now2 = now.count();
+		auto then2 = then.count();
+		
+		auto difference = chrono::duration_cast<chrono::milliseconds> (now - then).count();
+		
+		cout << "NOW: " << now2 << endl;
+		cout << "THEN: " << then2 << endl;
+		cout << "DIFFERENCE: " << difference << endl;
+		cout << "BLOCKTIME: " << BLOCKTIME << endl;
 		
 		if(difference >= BLOCKTIME) { // if time difference has surpassed BLOCKTIME, unblock IP address
-			bannedIPs.erase(inet_ntoa(address));
+			cout << "ENOUGH TIME HAS PASSED ... UNBANANING" << endl;
+			bannedIPs.erase(inet_ntoa(ci.clientaddress));
+			ci.loginTries = 1;
 			return false;
 		}else{ 
 			return true;
@@ -175,17 +189,18 @@ bool streamSocketServer::isIpAlreadyBlocked (in_addr address) {
 
 // adds a new ipaddress to the map of banned, only adds addresses that do not yet exist in our map
 // chrono function shamelessly copied from stackoverflow
-void streamSocketServer::blockIpAddress (in_addr address) {
-	if(!isIpAlreadyBlocked(address)) {
-		bannedIPs[inet_ntoa(address)] = chrono::duration_cast< chrono::milliseconds >(chrono::system_clock::now().time_since_epoch());
+void streamSocketServer::blockIpAddress (clientinfo& ci) {
+	if(!isIpAlreadyBlocked(ci)) {
+		bannedIPs[inet_ntoa(ci.clientaddress)] = chrono::duration_cast< chrono::milliseconds >(chrono::system_clock::now().time_since_epoch());
 	}
 }
 
 // checks if given username and password are correct, if wrong three times the method calls another function to block 
 // the ip address for a certain amount of time
-bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address) {
-	if(tryNumber >= 3) {
-		blockIpAddress(address);
+bool streamSocketServer::checkLogin(char* buffer, clientinfo& ci) {
+	if(ci.loginTries >= 3) {
+		cout << "CLIENT SURPASSED THREE TRIES, BLOCKING THAT FUCKER" << endl;
+		blockIpAddress(ci);
 		return false;
 	}
 	
@@ -200,7 +215,7 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
 	LDAPMessage *result, *e;	/* LDAP result handle */
 
 
-   int i,rc=0;
+   int rc=0;
 
    char *attribs[3];		/* attribute array for search */
 
@@ -212,8 +227,8 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
    /* setup LDAP connection */
    if ((ld=ldap_init(LDAP_HOST, LDAP_PORT)) == NULL)
    {
-      perror("ldap_init failed");
-      return false;
+	  perror("ldap_init failed");
+	  return false;
    }
 
    printf("connected to LDAP server %s on port %d\n",LDAP_HOST,LDAP_PORT);
@@ -223,12 +238,12 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
 
    if (rc != LDAP_SUCCESS)
    {
-      fprintf(stderr,"LDAP error: %s\n",ldap_err2string(rc));
-      return false;
+	  fprintf(stderr,"LDAP error: %s\n",ldap_err2string(rc));
+	  return false;
    }
    else
    {
-      printf("bind successful\n");
+	  printf("bind successful\n");
    }
 
    /* perform ldap search */
@@ -236,47 +251,55 @@ bool streamSocketServer::checkLogin(char* buffer, int tryNumber, in_addr address
 
    if (rc != LDAP_SUCCESS)
    {
-      fprintf(stderr,"LDAP search error: %s\n",ldap_err2string(rc));
-      return false;
+	  fprintf(stderr,"LDAP search error: %s\n",ldap_err2string(rc));
+	  return false;
    }
-   e = ldap_first_entry(ld, result);
-   string dn = ldap_get_dn(ld,e);
-   cout << dn << endl;
+   
+   if( (e = ldap_first_entry(ld, result)) != NULL) {
+	   string dn = ldap_get_dn(ld,e);
+		cout << dn << endl;
    
   
-      // just some printing of data on the server side.
-	printf("Total results: %d\n", ldap_count_entries(ld, result));
-	//after getting an approval that the user exists we make another bind with the password this time.
-	cout << username << endl;
+		// just some printing of data on the server side.
+		printf("Total results: %d\n", ldap_count_entries(ld, result));
+		//after getting an approval that the user exists we make another bind with the password this time.
+		cout << username << endl;
 	 
-	 rc = ldap_simple_bind_s(ld,dn.c_str(),passwordClean.c_str());
+		rc = ldap_simple_bind_s(ld,dn.c_str(),passwordClean.c_str());
 
-   if (rc != LDAP_SUCCESS)
-   {
-      fprintf(stderr,"LDAP error: %s\n",ldap_err2string(rc));
-      return false;
-   }
-   else
-   {
-      printf("bind successful\n");
-   }
-   
-      printf("\n");
-   
-  
-   /* free memory used for result */
-   ldap_msgfree(result);
-   free(attribs[0]);
-   free(attribs[1]);
-   printf("LDAP search suceeded\n");
-   
-   ldap_unbind(ld);
-   return true;
-	
+		if (rc != LDAP_SUCCESS)
+		{
+			fprintf(stderr,"LDAP error: %s\n",ldap_err2string(rc));
+			return false;
+		}
+		else
+		{
+			printf("bind successful\n");
+		}
+		printf("\n");
+		
+		/* free memory used for result */
+		ldap_msgfree(result);
+		free(attribs[0]);
+		free(attribs[1]);
+		printf("LDAP search succeeded\n");
+		ldap_unbind(ld);
+		
+		return true;
+	}else {
+		/* free memory used for result */
+		ldap_msgfree(result);
+		free(attribs[0]);
+		free(attribs[1]);
+		printf("LDAP search suceeded\n");
+		ldap_unbind(ld);
+		
+		return false;
+	}
 }
 
 //start the recv/send loop
-void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
+void streamSocketServer::initCommunicationWithClient (clientinfo ci) {
 	int bytesInBuffer;
 	char buffer[MAXDATASIZE];
 	
@@ -302,20 +325,24 @@ void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 			exit(1);
 		}
 		
-		if(!isIpAlreadyBlocked(ci.clientaddress) && loginSuccess) { // if IP is not blocked and login succeeded, we will handle the message
-			handleRecv(buffer, ci.clientfd);
-		}else if(isIpAlreadyBlocked(ci.clientaddress)){
+		if(isIpAlreadyBlocked(ci)){
+			cout << "CLIENT IS CURRENTLY BLOCKED" << endl;
 			message = "IP-Address (" + string(inet_ntoa(ci.clientaddress)) + ") is currently blocked.";
 			message.append(commands);
 			memset(buffer, 0, bytesInBuffer); // zero out the buffer
 			strcpy(buffer, message.c_str());
 			sendall(ci.clientfd, buffer, strlen(buffer));
+			continue;
 		}
 		
-		int tryNumber; // number of tries user tried to log in
-		//check if we already succeeded the login
-		while(!loginSuccess && !isIpAlreadyBlocked(ci.clientaddress)) {
-			if(!checkLogin(buffer, tryNumber, ci.clientaddress)) {
+		if(loginSuccess) { // login succeeded, we will handle the message
+			cout << "CLIENT IS NOT BLOCKED AND LOGGED IN, HE CAN PROCEED" << endl;
+			handleRecv(buffer, ci.clientfd);
+		}else {
+			cout << "CLIENT IS NOT LOGGED IN AND NOT BLOCKED" << endl;
+			if(!checkLogin(buffer, ci)) {
+				cout << "CLIENT FAILED LOGIN, TRY: " << ci.loginTries << endl;
+				
 				perror("Login rejected.");
 				
 				message = "LOGIN ERR\n";
@@ -324,8 +351,9 @@ void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 				memset(buffer, 0, bytesInBuffer); // zero out the buffer
 				strcpy(buffer, message.c_str());
 				sendall(ci.clientfd, buffer, strlen(buffer));
-				tryNumber++; //increment if login was rejected
+				ci.loginTries++; //increment if login was rejected
 			}else{
+				cout << "CLIENT LOGGED IN SUCCESSFULLY" << endl;
 				commands = "\nSEND, LIST, READ, DEL, QUIT\nEnter command: ";
 				message = "LOGIN OK\n";
 				message.append(commands);
@@ -334,11 +362,6 @@ void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 				strcpy(buffer, message.c_str());
 				sendall(ci.clientfd, buffer, strlen(buffer));
 				loginSuccess = true;
-				break;
-			}
-			
-			if(tryNumber >= 3) {
-				break;
 			}
 		}
 	}
@@ -348,9 +371,9 @@ void streamSocketServer::initCommunicationWithClient (struct clientinfo ci) {
 void streamSocketServer::startConnection() {
 	//define backlog, more specifically how many clients can queue up for connection
 	if(listen(sockfd, BACKLOG) == -1) {
-        perror("listen error");
-        exit(1);
-    }
+		perror("listen error");
+		exit(1);
+	}
 	
 	printf("Starting searching for clients ... \n");
 	
@@ -370,6 +393,7 @@ void streamSocketServer::startConnection() {
 		struct clientinfo ci;
 		ci.clientfd = clientfd;
 		ci.clientaddress = client_address.sin_addr;
+		ci.loginTries = 1;
 		
 		// thread it hard
 		thread clientThread (&streamSocketServer::initCommunicationWithClient, this, ci);

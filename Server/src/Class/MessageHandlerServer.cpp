@@ -170,13 +170,22 @@ string MessageHandlerServer::handleDel(string wholeMessage) {
 }
 
 string MessageHandlerServer::handleRead(string wholeMessage) {
+	cout << "This is the message handleRead() received: " << wholeMessage << endl;
+	
+	
 	string username = wholeMessage.substr(0, wholeMessage.find("\n"));
 	wholeMessage.erase(0, wholeMessage.find("\n") + 1);
 	string fileNumber = wholeMessage.substr(0, wholeMessage.find("\n"));
 	string filePath = path + username + "/" + fileNumber + ".txt";
 	string message;
 	
+	cout << "I extracted the following from the string in handleRead(): " << endl;
+	cout << "Username: " << username << endl;
+	cout << "fileNumber: " << fileNumber << endl;
+	cout << "filepath: " << filePath << endl;
+	
 	if( !(doesFileExist(filePath)) ) {
+		cout << "file does not exist" << endl;
 		messageResult = false;
 		message = "READ-ERR\n";
 		message.append(commands);
@@ -244,7 +253,7 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 	cout << messageWhole << "\n" << endl;
 	cout << "String size: " << messageWhole.size() << "\nSplit up to:" <<endl;
 	
-	while( counter != 3 ) {
+	while( counter != 5 ) {
 		cout << "Splitting round " << counter << endl;
 		messageSplitted[counter] = messageWhole.substr(0, messageWhole.find(seperator));
 		counter++;
@@ -303,6 +312,9 @@ string MessageHandlerServer::handleSend(string messageWhole) {
 // returns the message to be sent to the client
 char* MessageHandlerServer::HandleMessage() {
 	string message(buffer);
+	
+	cout << "THIS IS THE MESSAGE I RECEIVED: " << message << endl;
+	
 	string command = message.substr(0, message.find("\n"));
 	//delete command line, don't need it anymore
 	message.erase(0, message.find("\n") + 1);
@@ -314,7 +326,7 @@ char* MessageHandlerServer::HandleMessage() {
 		return backSender;
 		
 	}else if(strcmp(command.c_str(),"LIST") == 0){
-		buffer = handleList(message.substr(0, message.size() - 1));
+		buffer = handleList(message.substr(0, message.find("\n")));
 		strcpy(backSender, buffer.c_str());
 		return backSender;
 		
